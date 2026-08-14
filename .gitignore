@@ -1,0 +1,12 @@
+# Dependências e build
+node_modules/
+dist/
+dev-dist/
+
+# Logs e caches
+*.log
+.DS_Store
+*.tsbuildinfo
+
+# Backups do FactorCalc (contêm dados de clientes — nunca versionar)
+factorcalc-backup-*.json
