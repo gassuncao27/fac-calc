@@ -68,18 +68,75 @@ npm run smoke     # em outro
 
 Checklist completo validado: instalar → criar cliente → criar operação → salvar → ficar offline → recarregar → fechar/abrir → consultar → nova operação offline → PDF offline → backup offline.
 
-## Como instalar no tablet Android/Samsung
+## Como funciona offline (o modelo do app)
 
-A PWA precisa ser servida por **HTTPS** (ou localhost). Publique a pasta `dist/` em qualquer hospedagem estática com HTTPS (ex.: Netlify, Vercel, Cloudflare Pages, ou servidor próprio) e então, no tablet:
+| Etapa | Precisa de internet? |
+|---|---|
+| Primeiro acesso ao endereço do Pages (baixa o app) | **Sim, uma única vez** |
+| Instalar na tela de início | Não |
+| Uso diário: cadastrar, calcular, salvar, PDF, backup | **Não, nunca** |
+| Receber atualizações do app | Só quando houver rede (automático) |
 
-1. Abra a URL no **Chrome** (ou Samsung Internet).
-2. Menu ⋮ → **"Adicionar à tela inicial"** / **"Instalar aplicativo"**.
-3. Confirme. O ícone do FactorCalc aparece na tela inicial.
-4. Abra o app, aguarde o primeiro carregamento completo — a partir daí pode ativar o **modo avião**: tudo continua funcionando (dados, cálculos, histórico, PDF, backup).
+O **Service Worker** guarda os arquivos do app no aparelho no primeiro carregamento; o **IndexedDB** guarda clientes, operações e configurações localmente. O GitHub Pages entrega apenas os arquivos estáticos — **nenhum dado de cliente sai do aparelho**.
 
-> Importante: os dados ficam no navegador do aparelho. Use **Backup → Exportar backup** periodicamente e guarde o arquivo JSON em local seguro (Drive, e-mail, pendrive).
+Cada aparelho tem a sua própria base de dados: não há sincronização entre usuários. Para transferir, use **Exportar backup** em um e **Restaurar backup** no outro.
 
-Para testar na rede local sem publicar: `npm run preview -- --host` e acesse `http://SEU-IP:4173` no tablet (o Service Worker não instala via http remoto, mas serve para avaliar a interface; para o teste offline real, use HTTPS ou o Chrome desktop).
+### Persistência dos dados
+
+Na inicialização o app chama `navigator.storage.persist()`, marcando os dados como não descartáveis. A tela **Backup** mostra o status:
+
+- 🟢 **"Dados protegidos neste aparelho"** — o sistema não vai apagá-los para liberar espaço.
+- 🟡 **"Dados sem proteção"** — o app está sendo usado como aba do navegador. No iOS, dados de sites não instalados podem ser apagados após ~7 dias sem uso; instalar na Tela de Início resolve.
+
+## Publicar no GitHub Pages
+
+O app é totalmente estático (sem backend, sem banco), então o GitHub Pages serve bem.
+
+**1. Envie o projeto para o GitHub** (repositório público ou privado — o Pages funciona nos dois em contas Pro; em conta gratuita, use público):
+
+```bash
+git init -b main
+git add .
+git commit -m "FactorCalc"
+git remote add origin https://github.com/SEU_USUARIO/SEU_REPO.git
+git push -u origin main
+```
+
+**2. Ative o Pages:** no GitHub, vá em **Settings → Pages → Build and deployment** e em *Source* selecione **GitHub Actions**.
+
+Pronto. O workflow em `.github/workflows/deploy.yml` roda a cada `push` na `main`: valida lint, tipos e os testes do motor financeiro e, se tudo passar, publica. O endereço final é:
+
+```
+https://SEU_USUARIO.github.io/SEU_REPO/
+```
+
+Acompanhe o progresso na aba **Actions**. O primeiro deploy leva ~2 minutos.
+
+> Não é preciso configurar o nome do repositório em lugar nenhum: o build usa caminhos relativos (`base: './'`) e rotas em hash, então funciona em qualquer subpasta.
+
+Para conferir localmente como ficará no Pages (servindo numa subpasta, sem fallback de SPA, igual ao GitHub):
+
+```bash
+npm run build
+npm run preview:pages     # http://localhost:4174/fac-calc/
+```
+
+## Como instalar no iPad (Safari)
+
+1. Abra o endereço do Pages no **Safari** (no iOS, a instalação de PWA só funciona pelo Safari).
+2. Toque no botão **Compartilhar** (quadrado com seta para cima).
+3. Escolha **"Adicionar à Tela de Início"** e confirme.
+4. Abra o FactorCalc pelo ícone na tela de início e aguarde o primeiro carregamento completo.
+
+A partir daí funciona em modo avião, em tela cheia, sem barra do navegador.
+
+> **Importante no iOS:** só sites *adicionados à Tela de Início* têm armazenamento persistente. Se o app for usado apenas como aba do Safari, o iOS pode apagar os dados após ~7 dias sem uso. Instale pelo passo a passo acima e use **Backup → Exportar backup** periodicamente.
+
+## Como instalar no Android/Samsung
+
+1. Abra o endereço do Pages no **Chrome**.
+2. Menu ⋮ → **"Instalar aplicativo"** / **"Adicionar à tela inicial"**.
+3. Confirme e abra pelo ícone. Após o primeiro carregamento, funciona offline.
 
 ## Como simular o tablet no Chrome DevTools
 
@@ -112,7 +169,10 @@ src/
 scripts/
   generate-icons.mjs    ← gera os ícones PNG da PWA (sem dependências)
   smoke.mjs             ← smoke test E2E (Chrome headless)
+  serve-subpath.mjs     ← simula o GitHub Pages numa subpasta
 ```
+
+> **Os dados não são compartilhados entre aparelhos.** Cada dispositivo guarda os seus próprios clientes e operações no navegador. Para transferir, use **Exportar backup** em um e **Restaurar backup** no outro.
 
 ## Decisões técnicas
 
@@ -125,6 +185,7 @@ scripts/
 - **Exclusão de cliente preserva operações** (apenas desvincula).
 - **PIN local opcional** (4–6 dígitos, hash SHA-256) em Configurações — proteção de conveniência, sem login online.
 - **IOF** — lançado no campo "Outras despesas" na V1.
+- **Caminhos relativos + rotas em hash** (`base: './'`, `HashRouter`) — o build roda em qualquer subpasta sem reconfiguração, e recarregar uma rota profunda nunca cai no 404 do GitHub Pages (que não tem fallback de SPA).
 
 ## Preparado para a V2
 

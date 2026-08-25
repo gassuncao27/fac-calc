@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { HashRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { PinGate } from './components/PinLock';
 import { ToastProvider } from './components/ui/Toast';
@@ -14,7 +14,7 @@ export function App() {
   return (
     <ToastProvider>
       <PinGate>
-        <BrowserRouter>
+        <HashRouter>
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<DashboardPage />} />
@@ -28,7 +28,7 @@ export function App() {
               <Route path="*" element={<DashboardPage />} />
             </Route>
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </PinGate>
     </ToastProvider>
   );

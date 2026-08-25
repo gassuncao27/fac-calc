@@ -12,7 +12,8 @@
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "icons": "node scripts/generate-icons.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "preview:pages": "node scripts/serve-subpath.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

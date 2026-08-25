@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Download, FileUp, Sheet } from 'lucide-react';
+import { Download, FileUp, HardDrive, Sheet, TriangleAlert } from 'lucide-react';
 import { db } from '../db/database';
 import { exportBackup, parseBackup, restoreBackup, type BackupPreview } from '../services/backupService';
 import { exportAllDataCsv } from '../services/csvService';
@@ -9,11 +9,17 @@ import { Button } from '../components/ui/Button';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { useToast } from '../components/ui/Toast';
 import { formatDateTime } from '../utils/format';
+import { formatBytes, getStorageStatus, type StorageStatus } from '../utils/storage';
 
 export function BackupPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<BackupPreview | null>(null);
+  const [storage, setStorage] = useState<StorageStatus | null>(null);
+
+  useEffect(() => {
+    getStorageStatus().then(setStorage).catch(console.error);
+  }, []);
 
   const counts = useLiveQuery(
     async () => ({
@@ -84,6 +90,35 @@ export function BackupPage() {
       />
 
       <div className="space-y-6">
+        {storage && (
+          <section
+            className={`flex items-start gap-3 rounded-2xl border p-5 ${
+              storage.persistent
+                ? 'border-emerald-200/70 bg-emerald-50/50'
+                : 'border-amber-200/70 bg-amber-50/50'
+            }`}
+          >
+            {storage.persistent ? (
+              <HardDrive className="mt-0.5 size-5 shrink-0 text-emerald-600" />
+            ) : (
+              <TriangleAlert className="mt-0.5 size-5 shrink-0 text-amber-600" />
+            )}
+            <div className="min-w-0">
+              <p className="font-medium text-slate-900">
+                {storage.persistent
+                  ? 'Dados protegidos neste aparelho'
+                  : 'Dados sem proteção contra limpeza automática'}
+              </p>
+              <p className="mt-0.5 text-sm text-slate-600">
+                {storage.persistent
+                  ? 'O sistema não vai apagar os dados automaticamente para liberar espaço.'
+                  : 'Instale o app na tela de início (no iPhone/iPad: Compartilhar → “Adicionar à Tela de Início”) para que o sistema não apague os dados após alguns dias sem uso.'}
+                {storage.usageBytes !== null && ` Uso atual: ${formatBytes(storage.usageBytes)}.`}
+              </p>
+            </div>
+          </section>
+        )}
+
         <section className="rounded-2xl border border-slate-200/80 bg-white p-6">
           <h2 className="text-base font-semibold text-slate-900">Exportar backup</h2>
           <p className="mt-1 text-sm text-slate-500">

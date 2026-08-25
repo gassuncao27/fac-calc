@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  // Base relativa: o app funciona tanto na raiz de um domínio quanto em
+  // subpasta (GitHub Pages: usuario.github.io/nome-do-repo/), sem reconfigurar.
+  base: './',
   plugins: [
     react(),
     tailwindcss(),
@@ -17,8 +20,8 @@ export default defineConfig({
         description: 'Cálculo de operações de factoring — duplicatas, cheques e recebíveis.',
         display: 'standalone',
         orientation: 'any',
-        start_url: '/',
-        scope: '/',
+        start_url: '.',
+        scope: './',
         lang: 'pt-BR',
         background_color: '#FAFAF9',
         theme_color: '#FAFAF9',

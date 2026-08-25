@@ -34,7 +34,7 @@ check('Empty state do dashboard renderiza', true);
 await page.screenshot({ path: `${shotsDir}/01-dashboard-vazio.png` });
 
 // 2. Cadastrar cliente
-await page.click('a[href="/clientes"]');
+await page.click('nav a[href$="/clientes"] >> nth=0');
 await page.click('button:has-text("Novo cliente")');
 await page.fill('input[placeholder="Ex.: Comercial ABC Ltda"]', 'Empresa Teste Ltda');
 await page.click('button:has-text("Cadastrar cliente")');
@@ -44,7 +44,7 @@ check('Cliente criado e persistido', await page.isVisible('text=Empresa Teste Lt
 await page.screenshot({ path: `${shotsDir}/02-clientes.png` });
 
 // 3. Nova operação com 2 títulos
-await page.click('a[href="/operacoes/nova"]');
+await page.click('nav a[href$="/operacoes/nova"] >> nth=0');
 await page.waitForSelector('text=Nova operação');
 await page.selectOption('select[aria-label="Cliente"]', { label: 'Empresa Teste Ltda' });
 
@@ -75,7 +75,7 @@ check('Operação salva com número amigável', true);
 await page.screenshot({ path: `${shotsDir}/04-detalhe.png` });
 
 // 5. Histórico
-await page.click('a[href="/operacoes"]');
+await page.click('nav a[href$="/operacoes"] >> nth=0');
 await page.waitForSelector('text=/1 operação registrada/');
 check('Histórico lista a operação', await page.isVisible('text=Empresa Teste Ltda'));
 await page.screenshot({ path: `${shotsDir}/05-historico.png` });
@@ -103,7 +103,7 @@ if (navigatorOffline) {
 check('Offline: dados do IndexedDB acessíveis', await page.isVisible('text=Empresa Teste Ltda'));
 
 // 7. Nova operação offline
-await page.click('a[href="/operacoes/nova"]');
+await page.click('nav a[href$="/operacoes/nova"] >> nth=0');
 await page.click('button:has-text("Adicionar título")');
 await page.fill('[data-row="0"][data-col="value"]', '5000');
 await page.click('button:has-text("Salvar operação")');
@@ -119,7 +119,7 @@ const [pdfDownload] = await Promise.all([
 check('Offline: PDF gerado', pdfDownload.suggestedFilename().endsWith('.pdf'), pdfDownload.suggestedFilename());
 
 // 9. Backup offline
-await page.click('a[href="/backup"]');
+await page.click('nav a[href$="/backup"] >> nth=0');
 const [backupDownload] = await Promise.all([
   page.waitForEvent('download', { timeout: 20000 }),
   page.click('button:has-text("Exportar backup")'),
@@ -129,6 +129,43 @@ check(
   /^factorcalc-backup-\d{4}-\d{2}-\d{2}\.json$/.test(backupDownload.suggestedFilename()),
   backupDownload.suggestedFilename(),
 );
+await context.setOffline(false);
+
+// 10. Recarregar uma rota profunda (o que quebra no GitHub Pages sem hash routing)
+await page.click('nav a[href$="/operacoes"] >> nth=0');
+await page.waitForSelector('text=/opera\u00e7\u00e3o registrada|opera\u00e7\u00f5es registradas/');
+const deepUrl = page.url();
+const reloadResponse = await page.reload({ waitUntil: 'domcontentloaded' });
+await page.waitForSelector('text=/opera\u00e7\u00e3o registrada|opera\u00e7\u00f5es registradas/', { timeout: 15000 });
+check(
+  'Recarregar rota profunda funciona (sem 404 do servidor)',
+  (reloadResponse?.status() ?? 200) < 400,
+  deepUrl,
+);
+
+// 11. Fechar o app e reabrir OFFLINE (prova de persistência no aparelho)
+await context.setOffline(true);
+await page.close();
+const reopened = await context.newPage();
+await reopened.goto(BASE, { waitUntil: 'domcontentloaded' });
+await reopened.waitForSelector('text=Operações recentes', { timeout: 20000 });
+check('App fechado e reaberto offline: continua abrindo', true);
+check(
+  'App reaberto offline: cadastros preservados',
+  await reopened.isVisible('text=Empresa Teste Ltda'),
+);
+const opCount = await reopened.locator('a[href$="/operacoes"] , li').count();
+check('App reaberto offline: operações preservadas', opCount > 0);
+
+// 12. Status do armazenamento visível na tela de Backup
+await reopened.click('nav a[href$="/backup"] >> nth=0');
+await reopened.waitForSelector('text=Exportar backup');
+const storageCard = await reopened.textContent('main');
+check(
+  'Tela de Backup informa o status do armazenamento',
+  /Dados protegidos neste aparelho|sem prote\u00e7\u00e3o contra limpeza/.test(storageCard ?? ''),
+);
+await reopened.screenshot({ path: `${shotsDir}/10-reaberto-offline.png` });
 await context.setOffline(false);
 
 const realErrors = errors.filter(

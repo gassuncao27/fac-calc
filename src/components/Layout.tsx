@@ -3,6 +3,10 @@ import { Home, Plus, History, Users, Settings as SettingsIcon, DatabaseBackup, W
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { APP_NAME } from '../constants';
 
+// Resolve contra a base do build — funciona na raiz do domínio e em subpasta
+// (GitHub Pages). Um caminho absoluto '/icon.svg' quebraria em subpasta.
+const ICON_URL = `${import.meta.env.BASE_URL}icon.svg`;
+
 const NAV_ITEMS = [
   { to: '/', label: 'Início', icon: Home, end: true },
   { to: '/operacoes/nova', label: 'Nova operação', icon: Plus, end: false },
@@ -31,7 +35,7 @@ export function Layout() {
       {/* Sidebar — tablet horizontal e desktop */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-slate-200/70 bg-white/70 backdrop-blur md:flex">
         <div className="flex items-center gap-2.5 px-6 pb-2 pt-7">
-          <img src="/icon.svg" alt="" className="size-8 rounded-lg" />
+          <img src={ICON_URL} alt="" className="size-8 rounded-lg" />
           <span className="text-[17px] font-semibold tracking-tight text-slate-900">{APP_NAME}</span>
         </div>
         <nav className="mt-4 flex flex-1 flex-col gap-1 px-3" aria-label="Navegação principal">
@@ -61,7 +65,7 @@ export function Layout() {
       {/* Topo — telas pequenas */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200/70 bg-white/80 px-4 backdrop-blur md:hidden">
         <div className="flex items-center gap-2">
-          <img src="/icon.svg" alt="" className="size-7 rounded-lg" />
+          <img src={ICON_URL} alt="" className="size-7 rounded-lg" />
           <span className="font-semibold tracking-tight text-slate-900">{APP_NAME}</span>
         </div>
         <OfflineBadge />
