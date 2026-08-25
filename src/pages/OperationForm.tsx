@@ -241,11 +241,17 @@ export function OperationFormPage() {
         subtitle="Os valores são recalculados automaticamente a cada alteração."
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/*
+        Breakpoints alinhados à largura real: a sidebar (240px) e o Resumo
+        (340px) reduzem muito o espaço do formulário. O Resumo só vai para
+        o lado a partir de xl; abaixo disso ele fica embaixo, dando largura
+        total ao formulário (essencial no iPad em paisagem, 1194px).
+      */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-6">
           {/* Dados da operação */}
           <section className="rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 wide:grid-cols-3">
               <Field label="Cliente">
                 <ClientSelector value={form.clientId} onChange={(clientId) => patch({ clientId })} />
               </Field>
@@ -274,7 +280,7 @@ export function OperationFormPage() {
                 >
                   {Object.values(DISCOUNT_METHODS).map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.label}
+                      {m.shortLabel}
                     </option>
                   ))}
                 </Select>
@@ -329,7 +335,7 @@ export function OperationFormPage() {
         </div>
 
         {/* Resumo */}
-        <aside className="lg:sticky lg:top-8 lg:self-start">
+        <aside className="xl:sticky xl:top-8 xl:self-start">
           <OperationSummary
             result={result}
             monthlyRate={form.monthlyRate ?? 0}

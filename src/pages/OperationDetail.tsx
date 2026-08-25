@@ -18,6 +18,14 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { useToast } from '../components/ui/Toast';
 import { formatCents, formatDate, formatDays, formatPercent } from '../utils/format';
+import { useMediaQuery } from '../hooks/useMediaQuery';
+
+/**
+ * A tabela (somente leitura) precisa de ~700px de container. Assim como no
+ * formulário, a largura útil cai a partir de xl (1280px), quando o painel de
+ * Resumo passa a ocupar 364px ao lado — daí as duas faixas.
+ */
+const TABLE_QUERY = '(min-width: 1004px) and (max-width: 1279.98px), (min-width: 1368px)';
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
@@ -46,6 +54,7 @@ export function OperationDetailPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const compact = !useMediaQuery(TABLE_QUERY);
 
   const data = useLiveQuery(async () => {
     if (!id) return null;
@@ -178,7 +187,7 @@ export function OperationDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-6">
           <section className="rounded-2xl border border-slate-200/80 bg-white p-6">
             <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
@@ -200,36 +209,75 @@ export function OperationDetailPage() {
             <h2 className="mb-3 text-[12px] font-semibold uppercase tracking-widest text-slate-400">
               Títulos ({receivables.length})
             </h2>
-            <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
-              <table className="w-full min-w-[720px] text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 text-left text-[12px] uppercase tracking-wide text-slate-400">
-                    <th className="px-5 py-3 font-medium">Documento</th>
-                    <th className="px-5 py-3 text-right font-medium">Valor nominal</th>
-                    <th className="px-5 py-3 font-medium">Vencimento</th>
-                    <th className="px-3 py-3 text-right font-medium">Dias</th>
-                    <th className="px-5 py-3 text-right font-medium">Desconto</th>
-                    <th className="px-5 py-3 text-right font-medium">Líquido</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {receivables.map((r) => (
-                    <tr key={r.id} className="border-b border-slate-50 last:border-0">
-                      <td className="px-5 py-3.5 font-medium text-slate-900">{r.documentNumber || '—'}</td>
-                      <td className="tabular px-5 py-3.5 text-right text-slate-700">{formatCents(r.nominalAmountCents)}</td>
-                      <td className="tabular px-5 py-3.5 text-slate-600">{formatDate(r.dueDate)}</td>
-                      <td className="tabular px-3 py-3.5 text-right text-slate-500">{r.days}</td>
-                      <td className="tabular px-5 py-3.5 text-right text-slate-500">{formatCents(r.discountAmountCents)}</td>
-                      <td className="tabular px-5 py-3.5 text-right font-medium text-slate-900">{formatCents(r.netAmountCents)}</td>
+            {compact ? (
+              <ul className="space-y-3">
+                {receivables.map((r) => (
+                  <li key={r.id} className="rounded-2xl border border-slate-200/80 bg-white p-4">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-medium text-slate-900">{r.documentNumber || '—'}</span>
+                      <span className="tabular text-slate-600">{formatDate(r.dueDate)}</span>
+                    </div>
+                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm lg:grid-cols-4">
+                      <div>
+                        <dt className="text-[12px] text-slate-400">Valor nominal</dt>
+                        <dd className="tabular font-medium text-slate-700">{formatCents(r.nominalAmountCents)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[12px] text-slate-400">Dias</dt>
+                        <dd className="tabular font-medium text-slate-700">{r.days}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[12px] text-slate-400">Desconto</dt>
+                        <dd className="tabular font-medium text-slate-700">{formatCents(r.discountAmountCents)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[12px] text-slate-400">Líquido</dt>
+                        <dd className="tabular font-semibold text-slate-900">{formatCents(r.netAmountCents)}</dd>
+                      </div>
+                    </dl>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
+                <table className="w-full table-fixed text-sm">
+                  <colgroup>
+                    <col className="w-[14%]" />
+                    <col className="w-[21%]" />
+                    <col className="w-[18%]" />
+                    <col className="w-[9%]" />
+                    <col className="w-[18%]" />
+                    <col className="w-[20%]" />
+                  </colgroup>
+                  <thead>
+                    <tr className="border-b border-slate-100 text-left text-[12px] uppercase tracking-wide text-slate-400">
+                      <th className="px-3 py-3 font-medium">Documento</th>
+                      <th className="px-3 py-3 text-right font-medium">Valor nominal</th>
+                      <th className="px-3 py-3 font-medium">Vencimento</th>
+                      <th className="px-2 py-3 text-right font-medium">Dias</th>
+                      <th className="px-3 py-3 text-right font-medium">Desconto</th>
+                      <th className="px-3 py-3 text-right font-medium">Líquido</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {receivables.map((r) => (
+                      <tr key={r.id} className="border-b border-slate-50 last:border-0">
+                        <td className="truncate px-3 py-3.5 font-medium text-slate-900">{r.documentNumber || '—'}</td>
+                        <td className="tabular px-3 py-3.5 text-right text-slate-700">{formatCents(r.nominalAmountCents)}</td>
+                        <td className="tabular px-3 py-3.5 text-slate-600">{formatDate(r.dueDate)}</td>
+                        <td className="tabular px-2 py-3.5 text-right text-slate-500">{r.days}</td>
+                        <td className="tabular px-3 py-3.5 text-right text-slate-500">{formatCents(r.discountAmountCents)}</td>
+                        <td className="tabular px-3 py-3.5 text-right font-medium text-slate-900">{formatCents(r.netAmountCents)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         </div>
 
-        <aside className="lg:sticky lg:top-8 lg:self-start">
+        <aside className="xl:sticky xl:top-8 xl:self-start">
           <div className="rounded-2xl border border-slate-200/80 bg-white p-6">
             <h2 className="mb-3 text-[12px] font-semibold uppercase tracking-widest text-slate-400">Resumo</h2>
             <SummaryRow label="Valor nominal" value={formatCents(operation.nominalAmountCents)} />

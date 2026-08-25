@@ -72,7 +72,8 @@ export function Layout() {
       </header>
 
       <main className="px-4 pb-28 pt-6 md:ml-60 md:px-8 md:pb-12 md:pt-8">
-        <div className="mx-auto max-w-6xl">
+        {/* Em telas muito largas, abre espaço para formulário + Resumo lado a lado */}
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px]">
           <Outlet />
         </div>
       </main>

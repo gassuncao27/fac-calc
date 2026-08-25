@@ -9,6 +9,7 @@ import { inputClass } from './ui/Field';
 import { Button } from './ui/Button';
 import { formatCents } from '../utils/format';
 import { generateId } from '../utils/id';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 
 interface ReceivableTableProps {
   rows: ReceivableDraft[];
@@ -21,12 +22,24 @@ const COLS = ['doc', 'value', 'due'] as const;
 type Col = (typeof COLS)[number];
 
 /**
- * Grade de títulos com preenchimento rápido: Enter avança pelos campos
- * como em uma planilha e cria uma nova linha ao final. Dias, desconto e
- * líquido são recalculados a cada tecla pelo motor de domínio.
+ * A tabela precisa de ~880px de container para não cortar valores.
+ * O container depende de dois descontos:
+ *   - sidebar (240px) + respiro lateral (64px)  → sempre
+ *   - painel de Resumo (340px + gap)            → só a partir de xl (1280px)
+ * Daí as duas faixas: abaixo de xl basta 1184px de viewport; a partir de xl,
+ * onde o Resumo fica ao lado, só sobra espaço a partir de 1548px.
+ * Fora dessas faixas usamos cartões — melhor ao toque do que rolar na horizontal.
+ */
+const TABLE_QUERY = '(min-width: 1184px) and (max-width: 1279.98px), (min-width: 1548px)';
+
+/**
+ * Títulos da operação. Enter avança pelos campos como em uma planilha e
+ * cria uma nova linha ao final. Dias, desconto e líquido são recalculados
+ * a cada tecla pelo motor de domínio.
  */
 export function ReceivableTable({ rows, calcRows, operationDate, onChange }: ReceivableTableProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const showTable = useMediaQuery(TABLE_QUERY);
 
   const calcById = new Map(calcRows.map((r) => [r.id, r]));
 
@@ -62,8 +75,7 @@ export function ReceivableTable({ rows, calcRows, operationDate, onChange }: Rec
 
   function duplicateRow(index: number) {
     const copy: ReceivableDraft = { ...rows[index], id: generateId() };
-    const next = [...rows.slice(0, index + 1), copy, ...rows.slice(index + 1)];
-    onChange(next);
+    onChange([...rows.slice(0, index + 1), copy, ...rows.slice(index + 1)]);
     focusCell(index + 1, 'value');
   }
 
@@ -93,34 +105,127 @@ export function ReceivableTable({ rows, calcRows, operationDate, onChange }: Rec
     }
   }
 
+  const empty = (
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 px-6 py-12 text-center text-sm text-slate-400">
+      Nenhum título ainda. Toque em “Adicionar título” para começar.
+    </div>
+  );
+
+  function RowActions({ index }: { index: number }) {
+    return (
+      <div className="flex gap-1">
+        <button
+          type="button"
+          onClick={() => duplicateRow(index)}
+          aria-label={`Duplicar título ${index + 1}`}
+          title="Duplicar"
+          className="flex size-10 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+        >
+          <Copy className="size-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => removeRow(index)}
+          aria-label={`Excluir título ${index + 1}`}
+          title="Excluir"
+          className="flex size-10 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+        >
+          <Trash2 className="size-4" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div ref={containerRef} onKeyDown={handleKeyDown}>
-      <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
-        <table className="w-full min-w-[880px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 text-left text-[12px] font-medium uppercase tracking-wide text-slate-400">
-              <th className="px-4 py-3 font-medium">Documento</th>
-              <th className="px-4 py-3 text-right font-medium">Valor nominal</th>
-              <th className="px-4 py-3 font-medium">Vencimento</th>
-              <th className="px-3 py-3 text-right font-medium">Dias</th>
-              <th className="px-4 py-3 text-right font-medium">Desconto</th>
-              <th className="px-4 py-3 text-right font-medium">Líquido</th>
-              <th className="w-24 px-2 py-3" aria-label="Ações" />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-400">
-                  Nenhum título ainda. Toque em “Adicionar título” para começar.
-                </td>
+      {rows.length === 0 && empty}
+
+      {rows.length > 0 && showTable && (
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
+          <table className="w-full table-fixed border-collapse text-sm">
+            <colgroup>
+              <col className="w-[11%]" />
+              <col className="w-[20%]" />
+              <col className="w-[18%]" />
+              <col className="w-[6%]" />
+              <col className="w-[15%]" />
+              <col className="w-[20%]" />
+              <col className="w-[10%]" />
+            </colgroup>
+            <thead>
+              <tr className="border-b border-slate-100 text-left text-[12px] font-medium uppercase tracking-wide text-slate-400">
+                <th className="px-3 py-3 font-medium">Documento</th>
+                <th className="px-3 py-3 text-right font-medium">Valor nominal</th>
+                <th className="px-3 py-3 font-medium">Vencimento</th>
+                <th className="px-2 py-3 text-right font-medium">Dias</th>
+                <th className="px-3 py-3 text-right font-medium">Desconto</th>
+                <th className="px-3 py-3 text-right font-medium">Líquido</th>
+                <th className="px-2 py-3" aria-label="Ações" />
               </tr>
-            )}
-            {rows.map((row, index) => {
-              const calc = calcById.get(row.id);
-              return (
-                <tr key={row.id} className="border-b border-slate-50 last:border-0">
-                  <td className="px-2 py-1.5">
+            </thead>
+            <tbody>
+              {rows.map((row, index) => {
+                const calc = calcById.get(row.id);
+                return (
+                  <tr key={row.id} className="border-b border-slate-50 last:border-0">
+                    <td className="px-1.5 py-1.5">
+                      <input
+                        type="text"
+                        value={row.documentNumber}
+                        data-row={index}
+                        data-col="doc"
+                        aria-label={`Documento do título ${index + 1}`}
+                        onChange={(e) => patchRow(index, { documentNumber: e.target.value })}
+                        className={`${inputClass} h-10 border-transparent bg-transparent px-2 shadow-none focus:bg-white`}
+                      />
+                    </td>
+                    <td className="px-1.5 py-1.5">
+                      <CurrencyInput
+                        valueCents={row.nominalAmountCents || null}
+                        data-row={index}
+                        data-col="value"
+                        aria-label={`Valor nominal do título ${index + 1}`}
+                        onChangeCents={(cents) => patchRow(index, { nominalAmountCents: cents ?? 0 })}
+                        className="h-10 border-transparent bg-transparent px-2 shadow-none focus:bg-white"
+                      />
+                    </td>
+                    <td className="px-1.5 py-1.5">
+                      <DateInput
+                        value={row.dueDate}
+                        data-row={index}
+                        data-col="due"
+                        aria-label={`Vencimento do título ${index + 1}`}
+                        onChangeValue={(date) => patchRow(index, { dueDate: date })}
+                        className="h-10 border-transparent bg-transparent px-2 shadow-none focus:bg-white"
+                      />
+                    </td>
+                    <td className="tabular px-2 py-1.5 text-right text-slate-500">{calc?.days ?? '—'}</td>
+                    <td className="tabular truncate px-3 py-1.5 text-right text-slate-500">
+                      {calc ? formatCents(calc.discountAmountCents) : '—'}
+                    </td>
+                    <td className="tabular truncate px-3 py-1.5 text-right font-medium text-slate-900">
+                      {calc ? formatCents(calc.netAmountCents) : '—'}
+                    </td>
+                    <td className="px-1 py-1.5">
+                      <RowActions index={index} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {rows.length > 0 && !showTable && (
+        <ul className="space-y-3">
+          {rows.map((row, index) => {
+            const calc = calcById.get(row.id);
+            return (
+              <li key={row.id} className="rounded-2xl border border-slate-200/80 bg-white p-4">
+                <div className="flex items-end justify-between gap-3">
+                  <label className="min-w-0 flex-1 sm:max-w-[240px]">
+                    <span className="mb-1 block text-[12px] font-medium text-slate-500">Documento</span>
                     <input
                       type="text"
                       value={row.documentNumber}
@@ -128,64 +233,59 @@ export function ReceivableTable({ rows, calcRows, operationDate, onChange }: Rec
                       data-col="doc"
                       aria-label={`Documento do título ${index + 1}`}
                       onChange={(e) => patchRow(index, { documentNumber: e.target.value })}
-                      className={`${inputClass} h-10 min-w-24 border-transparent bg-transparent shadow-none focus:bg-white`}
+                      className={inputClass}
                     />
-                  </td>
-                  <td className="px-2 py-1.5">
+                  </label>
+                  <RowActions index={index} />
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-1 block text-[12px] font-medium text-slate-500">Valor nominal</span>
                     <CurrencyInput
                       valueCents={row.nominalAmountCents || null}
                       data-row={index}
                       data-col="value"
                       aria-label={`Valor nominal do título ${index + 1}`}
                       onChangeCents={(cents) => patchRow(index, { nominalAmountCents: cents ?? 0 })}
-                      className="h-10 min-w-40 border-transparent bg-transparent shadow-none focus:bg-white"
                     />
-                  </td>
-                  <td className="px-2 py-1.5">
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-[12px] font-medium text-slate-500">Vencimento</span>
                     <DateInput
                       value={row.dueDate}
                       data-row={index}
                       data-col="due"
                       aria-label={`Vencimento do título ${index + 1}`}
                       onChangeValue={(date) => patchRow(index, { dueDate: date })}
-                      className="h-10 min-w-44 border-transparent bg-transparent shadow-none focus:bg-white"
                     />
-                  </td>
-                  <td className="tabular px-3 py-1.5 text-right text-slate-500">{calc?.days ?? '—'}</td>
-                  <td className="tabular px-4 py-1.5 text-right text-slate-500">
-                    {calc ? formatCents(calc.discountAmountCents) : '—'}
-                  </td>
-                  <td className="tabular px-4 py-1.5 text-right font-medium text-slate-900">
-                    {calc ? formatCents(calc.netAmountCents) : '—'}
-                  </td>
-                  <td className="px-2 py-1.5">
-                    <div className="flex justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => duplicateRow(index)}
-                        aria-label={`Duplicar título ${index + 1}`}
-                        title="Duplicar"
-                        className="flex size-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                      >
-                        <Copy className="size-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeRow(index)}
-                        aria-label={`Excluir título ${index + 1}`}
-                        title="Excluir"
-                        className="flex size-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                  </label>
+                </div>
+
+                <dl className="mt-4 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-slate-100 pt-3 text-sm">
+                  <div className="flex items-baseline gap-1.5">
+                    <dt className="text-slate-400">Dias</dt>
+                    <dd className="tabular font-medium text-slate-600">{calc?.days ?? '—'}</dd>
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <dt className="text-slate-400">Desconto</dt>
+                    <dd className="tabular font-medium text-slate-600">
+                      {calc ? formatCents(calc.discountAmountCents) : '—'}
+                    </dd>
+                  </div>
+                  <div className="ml-auto flex items-baseline gap-1.5">
+                    <dt className="text-slate-400">Líquido</dt>
+                    <dd className="tabular font-semibold text-slate-900">
+                      {calc ? formatCents(calc.netAmountCents) : '—'}
+                    </dd>
+                  </div>
+                </dl>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
       <Button variant="secondary" onClick={addRow} className="mt-3" type="button">
         <Plus className="size-4" />
         Adicionar título

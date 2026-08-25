@@ -46,11 +46,15 @@ npm run lint      # ESLint
 npm run typecheck # TypeScript
 ```
 
-Há também um smoke test E2E (requer Google Chrome instalado) que percorre o fluxo completo — cliente → operação → salvar → histórico → offline → PDF → backup:
+Há também dois testes de navegador (requerem Google Chrome instalado):
 
 ```bash
-npm run preview   # em um terminal
-npm run smoke     # em outro
+npm run preview:pages   # em um terminal (serve o build numa subpasta, como o Pages)
+
+npm run smoke        # fluxo completo: cliente → operação → salvar → histórico
+                     # → offline → PDF → backup → fechar/reabrir offline
+npm run responsive   # abre todas as páginas em 9 larguras (390px … 1920px) e
+                     # falha se algo transbordar ou gerar rolagem horizontal
 ```
 
 ## Como testar a PWA (Chrome desktop)
@@ -67,6 +71,17 @@ npm run smoke     # em outro
 3. Crie operações, consulte o histórico, gere PDF e exporte backup — tudo funciona sem rede.
 
 Checklist completo validado: instalar → criar cliente → criar operação → salvar → ficar offline → recarregar → fechar/abrir → consultar → nova operação offline → PDF offline → backup offline.
+
+## Layout responsivo
+
+A largura útil **não** é a largura da tela: a sidebar ocupa 240px e, nas telas maiores, o painel de Resumo ocupa mais 364px ao lado. Por isso os breakpoints não são de viewport puro — usar `lg:grid-cols-3` produzia colunas de 91px em 1024px, com os campos se sobrepondo.
+
+O projeto resolve isso de duas formas:
+
+- **Breakpoint `wide`** (em `tailwind.config.js`): significa "a coluna do formulário tem pelo menos ~880px". Como a largura útil cai quando o Resumo entra ao lado, ele é definido em duas faixas de viewport.
+- **Tabelas viram cartões** quando não há largura: a grade de títulos, o histórico e os títulos da tela de detalhe alternam entre tabela e lista de cartões via `useMediaQuery`, renderizando só uma das duas (nunca escondendo com CSS, o que duplicaria os campos).
+
+Rode `npm run responsive` após mexer em layout — ele falha se algum texto transbordar.
 
 ## Compatibilidade de navegadores
 

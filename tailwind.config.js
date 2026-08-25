@@ -3,6 +3,17 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      screens: {
+        /*
+         * "wide" = a coluna do formulário tem pelo menos ~880px.
+         * Não dá para usar breakpoints de viewport puros porque a largura
+         * útil depende da sidebar (240px), do respiro (64px) e do painel de
+         * Resumo (364px), que só entra ao lado a partir de xl (1280px).
+         * Por isso as duas faixas. Mantenha em sinergia com TABLE_QUERY
+         * em src/components/ReceivableTable.tsx.
+         */
+        wide: { raw: '(min-width: 1184px) and (max-width: 1279.98px), (min-width: 1548px)' },
+      },
       fontFamily: {
         sans: [
           'system-ui',

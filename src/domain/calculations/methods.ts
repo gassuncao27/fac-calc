@@ -10,7 +10,10 @@ import { simpleDiscountCents, type SimpleDiscountArgs } from './discount';
  */
 export interface DiscountMethod {
   id: CalculationMethod;
+  /** Nome completo — usado em documentos e telas com espaço sobrando. */
   label: string;
+  /** Nome curto — usado em selects, onde a largura é apertada. */
+  shortLabel: string;
   discountCents(args: SimpleDiscountArgs): number;
 }
 
@@ -18,6 +21,7 @@ export const DISCOUNT_METHODS: Record<CalculationMethod, DiscountMethod> = {
   simple_monthly: {
     id: 'simple_monthly',
     label: 'Desconto simples por taxa mensal',
+    shortLabel: 'Desconto simples',
     discountCents: simpleDiscountCents,
   },
 };

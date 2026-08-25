@@ -148,7 +148,7 @@ export function SettingsPage() {
               >
                 {Object.values(DISCOUNT_METHODS).map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.label}
+                    {m.shortLabel}
                   </option>
                 ))}
               </Select>

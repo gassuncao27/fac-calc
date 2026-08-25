@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "icons": "node scripts/generate-icons.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "preview:pages": "node scripts/serve-subpath.mjs"
+    "preview:pages": "node scripts/serve-subpath.mjs",
+    "responsive": "node scripts/responsive-check.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
