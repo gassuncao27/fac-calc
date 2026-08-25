@@ -31,7 +31,7 @@ function OfflineBadge() {
 
 export function Layout() {
   return (
-    <div className="min-h-dvh bg-[#FAFAF9]">
+    <div className="min-h-app bg-[#FAFAF9]">
       {/* Sidebar — tablet horizontal e desktop */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-slate-200/70 bg-white/70 backdrop-blur md:flex">
         <div className="flex items-center gap-2.5 px-6 pb-2 pt-7">

@@ -4,7 +4,7 @@ Aplicação PWA para cálculo de operações de factoring (duplicatas, cheques e
 
 ## Stack
 
-React 18 · TypeScript · Vite 6 · Tailwind CSS 4 · Dexie (IndexedDB) · vite-plugin-pwa (Workbox) · React Hook Form + Zod · date-fns · jsPDF + autotable · Vitest
+React 18 · TypeScript · Vite 6 · Tailwind CSS 3 · Dexie (IndexedDB) · vite-plugin-pwa (Workbox) · React Hook Form + Zod · date-fns · jsPDF + autotable · Vitest
 
 ## Instalação
 
@@ -67,6 +67,14 @@ npm run smoke     # em outro
 3. Crie operações, consulte o histórico, gere PDF e exporte backup — tudo funciona sem rede.
 
 Checklist completo validado: instalar → criar cliente → criar operação → salvar → ficar offline → recarregar → fechar/abrir → consultar → nova operação offline → PDF offline → backup offline.
+
+## Compatibilidade de navegadores
+
+O app é compilado para **Safari 14+ / iPadOS 14+**, para rodar também em iPads antigos que não recebem mais atualizações.
+
+Por isso o projeto usa **Tailwind CSS 3** e não a v4: a v4 gera CSS com `@property`, `oklch()`, `color-mix()` e `@layer`, que exigem **Safari 16.4+** — num iPad mais antigo o Safari descarta essas regras e a página aparece praticamente sem estilo. O `build.target`/`cssTarget` do Vite também estão fixados em `safari14`.
+
+Se um dia migrar para Tailwind v4, verifique antes em qual iPad o app será usado.
 
 ## Como funciona offline (o modelo do app)
 
@@ -185,6 +193,7 @@ scripts/
 - **Exclusão de cliente preserva operações** (apenas desvincula).
 - **PIN local opcional** (4–6 dígitos, hash SHA-256) em Configurações — proteção de conveniência, sem login online.
 - **IOF** — lançado no campo "Outras despesas" na V1.
+- **Tailwind v3 + alvo Safari 14** — compatibilidade com iPads antigos (ver seção acima). Unidades `dvh` têm fallback em `vh` via `@supports`, e os campos usam fonte de 16px para o iOS não dar zoom ao focar.
 - **Caminhos relativos + rotas em hash** (`base: './'`, `HashRouter`) — o build roda em qualquer subpasta sem reconfiguração, e recarregar uma rota profunda nunca cai no 404 do GitHub Pages (que não tem fallback de SPA).
 
 ## Preparado para a V2

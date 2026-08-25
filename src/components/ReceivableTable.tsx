@@ -96,7 +96,7 @@ export function ReceivableTable({ rows, calcRows, operationDate, onChange }: Rec
   return (
     <div ref={containerRef} onKeyDown={handleKeyDown}>
       <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white">
-        <table className="w-full min-w-[820px] border-collapse text-sm">
+        <table className="w-full min-w-[880px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-slate-100 text-left text-[12px] font-medium uppercase tracking-wide text-slate-400">
               <th className="px-4 py-3 font-medium">Documento</th>
@@ -138,7 +138,7 @@ export function ReceivableTable({ rows, calcRows, operationDate, onChange }: Rec
                       data-col="value"
                       aria-label={`Valor nominal do título ${index + 1}`}
                       onChangeCents={(cents) => patchRow(index, { nominalAmountCents: cents ?? 0 })}
-                      className="h-10 min-w-32 border-transparent bg-transparent shadow-none focus:bg-white"
+                      className="h-10 min-w-40 border-transparent bg-transparent shadow-none focus:bg-white"
                     />
                   </td>
                   <td className="px-2 py-1.5">
@@ -148,7 +148,7 @@ export function ReceivableTable({ rows, calcRows, operationDate, onChange }: Rec
                       data-col="due"
                       aria-label={`Vencimento do título ${index + 1}`}
                       onChangeValue={(date) => patchRow(index, { dueDate: date })}
-                      className="h-10 min-w-36 border-transparent bg-transparent shadow-none focus:bg-white"
+                      className="h-10 min-w-44 border-transparent bg-transparent shadow-none focus:bg-white"
                     />
                   </td>
                   <td className="tabular px-3 py-1.5 text-right text-slate-500">{calc?.days ?? '—'}</td>

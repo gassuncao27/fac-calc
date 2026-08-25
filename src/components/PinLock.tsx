@@ -29,7 +29,7 @@ export function PinGate({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-[#FAFAF9] px-6">
+    <div className="flex min-h-app flex-col items-center justify-center bg-[#FAFAF9] px-6">
       <div className="w-full max-w-xs text-center">
         <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-slate-900">
           <Lock className="size-6 text-emerald-400" />

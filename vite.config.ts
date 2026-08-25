@@ -1,16 +1,20 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   // Base relativa: o app funciona tanto na raiz de um domínio quanto em
   // subpasta (GitHub Pages: usuario.github.io/nome-do-repo/), sem reconfigurar.
   base: './',
+  // Alvos conservadores: o app precisa rodar em iPads antigos (Safari 14+),
+  // não só em navegadores recentes. Vale para JS e CSS.
+  build: {
+    target: ['es2020', 'safari14'],
+    cssTarget: ['safari14'],
+  },
   plugins: [
     react(),
-    tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],

@@ -11,7 +11,7 @@ function Row({ label, value, muted = false }: { label: string; value: string; mu
   return (
     <div className="flex items-baseline justify-between gap-4 py-1.5">
       <span className="text-[13px] text-slate-500">{label}</span>
-      <span className={`tabular text-[15px] font-medium ${muted ? 'text-slate-500' : 'text-slate-900'}`}>
+      <span className={`tabular text-base font-medium ${muted ? 'text-slate-500' : 'text-slate-900'}`}>
         {value}
       </span>
     </div>
