@@ -147,4 +147,88 @@ describe('calculateOperation', () => {
     expect(result.netAmountCents).toBe(1_000_000);
     expect(result.effectiveMonthlyRate).toBeNull();
   });
+
+  // Caso conferido manualmente pelo usuário (16.550 / 2,50% a.m. / 60 dias):
+  // deságio 827,50 · líquido 15.722,50 · efetiva 2,5978% a.m. · 36,04% a.a.
+  it('reproduz o exemplo validado de 60 dias, sem IOF', () => {
+    const result = calculateOperation(
+      baseInput({
+        operationDate: '2026-08-26',
+        monthlyRate: 2.5,
+        receivables: [
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_655_000, dueDate: '2026-10-25' },
+        ],
+      }),
+    );
+    expect(result.receivables[0].days).toBe(60);
+    expect(result.discountAmountCents).toBe(82_750); // R$ 827,50
+    expect(result.netAmountCents).toBe(1_572_250); // R$ 15.722,50
+    expect(result.iofAmountCents).toBe(0);
+    expect(result.effectiveMonthlyRate!).toBeCloseTo(2.5978, 4);
+    expect(result.effectiveAnnualRate!).toBeCloseTo(36.04, 2);
+  });
+
+  it('aplica IOF sobre o líquido entregue, reduzindo o valor final', () => {
+    const comum = {
+      operationDate: '2026-08-26',
+      monthlyRate: 2.5,
+      receivables: [
+        { id: '1', documentNumber: '001', nominalAmountCents: 1_655_000, dueDate: '2026-10-25' },
+      ],
+    };
+    const semIof = calculateOperation(baseInput(comum));
+    const comIof = calculateOperation(
+      baseInput({ ...comum, iofEnabled: true, iofDailyRate: 0.0082, iofAdditionalRate: 0.95 }),
+    );
+
+    // Base do IOF é o líquido ANTES do imposto (sem circularidade)
+    expect(comIof.iofBaseCents).toBe(semIof.netAmountCents);
+    expect(comIof.iofPrincipalCents).toBe(7_735); // 15.722,50 × 0,0082% × 60
+    expect(comIof.iofAdditionalCents).toBe(14_936); // 15.722,50 × 0,95%
+    expect(comIof.iofAmountCents).toBe(22_671); // R$ 226,71
+    expect(comIof.netAmountCents).toBe(1_549_579); // R$ 15.495,79
+
+    // Deságio e nominal não mudam; só o líquido cai
+    expect(comIof.discountAmountCents).toBe(semIof.discountAmountCents);
+    expect(comIof.nominalAmountCents).toBe(semIof.nominalAmountCents);
+    // Entregando menos pelo mesmo recebimento, a taxa efetiva sobe
+    expect(comIof.effectiveMonthlyRate!).toBeGreaterThan(semIof.effectiveMonthlyRate!);
+  });
+
+  it('IOF desligado ignora as alíquotas informadas', () => {
+    const result = calculateOperation(
+      baseInput({
+        iofEnabled: false,
+        iofDailyRate: 0.0082,
+        iofAdditionalRate: 0.95,
+        receivables: [
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-28' },
+        ],
+      }),
+    );
+    expect(result.iofAmountCents).toBe(0);
+    expect(result.iofBaseCents).toBe(0);
+    expect(result.netAmountCents).toBe(955_000);
+  });
+
+  it('IOF respeita os prazos de cada título em operação com vários', () => {
+    const result = calculateOperation(
+      baseInput({
+        monthlyRate: 2.5,
+        iofEnabled: true,
+        iofDailyRate: 0.0082,
+        iofAdditionalRate: 0.95,
+        receivables: [
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-15' },
+          { id: '2', documentNumber: '002', nominalAmountCents: 1_500_000, dueDate: '2026-09-30' },
+          { id: '3', documentNumber: '003', nominalAmountCents: 800_000, dueDate: '2026-10-15' },
+        ],
+      }),
+    );
+    expect(result.iofBaseCents).toBe(3_173_250);
+    expect(result.iofAdditionalCents).toBe(30_146); // 3.173.250 × 0,95%
+    // principal > 0 e coerente com o prazo médio da carteira
+    expect(result.iofPrincipalCents).toBeGreaterThan(0);
+    expect(result.netAmountCents).toBe(3_173_250 - result.iofAmountCents);
+  });
 });

@@ -102,6 +102,50 @@ export function SettingsPage() {
               />
             </Field>
           </div>
+
+          <label className="mt-4 flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={settings.isFactoring}
+              onChange={(e) => patch({ isFactoring: e.target.checked })}
+              className="mt-0.5 size-5 shrink-0 accent-slate-900"
+            />
+            <span className="min-w-0">
+              <span className="block font-medium text-slate-900">Empresa é factoring</span>
+              <span className="mt-0.5 block text-sm text-slate-500">
+                Novas operações já vêm com o IOF marcado. Continua sendo possível desmarcar caso a
+                caso.
+              </span>
+            </span>
+          </label>
+        </section>
+
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-6">
+          <h2 className="mb-1 text-[12px] font-semibold uppercase tracking-widest text-slate-400">
+            IOF
+          </h2>
+          <p className="mb-4 text-sm text-slate-500">
+            O IOF incide sobre o valor líquido entregue ao cedente: alíquota diária pelo prazo de
+            cada título (limitada a 365 dias) mais o adicional fixo.{' '}
+            <strong className="font-medium text-slate-700">
+              As alíquotas mudam por decreto — confira as vigentes antes de usar.
+            </strong>
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Alíquota diária" hint="Ex.: 0,0082% ao dia.">
+              <PercentInput
+                value={settings.iofDailyRate}
+                digits={4}
+                onChangeValue={(v) => patch({ iofDailyRate: v ?? 0 })}
+              />
+            </Field>
+            <Field label="Alíquota adicional" hint="Cobrada uma vez, independe do prazo.">
+              <PercentInput
+                value={settings.iofAdditionalRate}
+                onChangeValue={(v) => patch({ iofAdditionalRate: v ?? 0 })}
+              />
+            </Field>
+          </div>
         </section>
 
         <section className="rounded-2xl border border-slate-200/80 bg-white p-6">

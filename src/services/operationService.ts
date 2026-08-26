@@ -31,6 +31,9 @@ export interface OperationDraft {
   fixedFeeCents: number;
   percentageFee: number;
   otherExpensesCents: number;
+  iofEnabled: boolean;
+  iofDailyRate: number;
+  iofAdditionalRate: number;
   notes?: string;
   receivables: ReceivableDraft[];
 }
@@ -49,6 +52,9 @@ export async function saveOperation(draft: OperationDraft, existingId?: string):
     fixedFeeCents: draft.fixedFeeCents,
     percentageFee: draft.percentageFee,
     otherExpensesCents: draft.otherExpensesCents,
+    iofEnabled: draft.iofEnabled,
+    iofDailyRate: draft.iofDailyRate,
+    iofAdditionalRate: draft.iofAdditionalRate,
     receivables: draft.receivables,
   });
 
@@ -86,6 +92,12 @@ export async function saveOperation(draft: OperationDraft, existingId?: string):
       fixedFeeCents: draft.fixedFeeCents,
       percentageFee: draft.percentageFee,
       otherExpensesCents: draft.otherExpensesCents,
+      iofEnabled: draft.iofEnabled,
+      iofDailyRate: draft.iofDailyRate,
+      iofAdditionalRate: draft.iofAdditionalRate,
+      iofPrincipalCents: result.iofPrincipalCents,
+      iofAdditionalCents: result.iofAdditionalCents,
+      iofAmountCents: result.iofAmountCents,
       nominalAmountCents: result.nominalAmountCents,
       discountAmountCents: result.discountAmountCents,
       totalFeesCents: result.feesAmountCents,
@@ -149,6 +161,9 @@ export async function duplicateOperation(id: string): Promise<Operation | null> 
     fixedFeeCents: operation.fixedFeeCents,
     percentageFee: operation.percentageFee,
     otherExpensesCents: operation.otherExpensesCents,
+    iofEnabled: operation.iofEnabled ?? false,
+    iofDailyRate: operation.iofDailyRate ?? 0,
+    iofAdditionalRate: operation.iofAdditionalRate ?? 0,
     notes: operation.notes,
     receivables: receivables.map((r) => ({
       id: generateId(),

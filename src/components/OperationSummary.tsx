@@ -30,6 +30,9 @@ export function OperationSummary({ result, monthlyRate, decimalPlaces = 2 }: Ope
       <Row label="Deságio" value={`− ${formatCents(result.discountAmountCents)}`} muted />
       <Row label="Tarifas" value={`− ${formatCents(result.feesAmountCents)}`} muted />
       <Row label="Outras despesas" value={`− ${formatCents(result.expensesAmountCents)}`} muted />
+      {result.iofAmountCents > 0 && (
+        <Row label="IOF" value={`− ${formatCents(result.iofAmountCents)}`} muted />
+      )}
 
       <div className="my-4 border-t border-slate-100" />
 
@@ -49,7 +52,7 @@ export function OperationSummary({ result, monthlyRate, decimalPlaces = 2 }: Ope
         }
       />
       <Row
-        label="Taxa efetiva anual"
+        label="Taxa efetiva anual (base 360)"
         value={
           result.effectiveAnnualRate === null
             ? '—'
@@ -57,8 +60,9 @@ export function OperationSummary({ result, monthlyRate, decimalPlaces = 2 }: Ope
         }
       />
       <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
-        Taxa comercial é a taxa contratada do desconto. Taxa efetiva é a taxa implícita dos fluxos
-        financeiros da operação (equivalente a XIRR).
+        Taxa comercial é a contratada no desconto. Taxa efetiva é a taxa implícita dos fluxos
+        financeiros, calculada sobre o valor líquido entregue — mês comercial de 30 dias e
+        anualização composta em base 360.
       </p>
     </div>
   );

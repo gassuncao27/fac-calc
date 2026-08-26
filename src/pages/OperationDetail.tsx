@@ -197,6 +197,14 @@ export function OperationDetailPage() {
               <InfoItem label="Taxa comercial" value={`${formatPercent(operation.monthlyRate)} a.m.`} />
               <InfoItem label="Base de cálculo" value={`${operation.dayBase} dias`} />
               <InfoItem label="Criada em" value={formatDate(operation.createdAt.slice(0, 10))} />
+              <InfoItem
+                label="IOF"
+                value={
+                  operation.iofEnabled
+                    ? `${formatPercent(operation.iofDailyRate, 4)} a.d. + ${formatPercent(operation.iofAdditionalRate)}`
+                    : 'Não incide'
+                }
+              />
             </div>
             {operation.notes && (
               <p className="mt-5 whitespace-pre-wrap border-t border-slate-100 pt-4 text-sm text-slate-600">
@@ -285,6 +293,9 @@ export function OperationDetailPage() {
             <SummaryRow label="Deságio" value={`− ${formatCents(operation.discountAmountCents)}`} />
             <SummaryRow label="Tarifas" value={`− ${formatCents(operation.totalFeesCents)}`} />
             <SummaryRow label="Outras despesas" value={`− ${formatCents(operation.totalExpensesCents)}`} />
+            {(operation.iofAmountCents ?? 0) > 0 && (
+              <SummaryRow label="IOF" value={`− ${formatCents(operation.iofAmountCents)}`} />
+            )}
             <div className="my-4 border-t border-slate-100" />
             <p className="text-[12px] font-semibold uppercase tracking-widest text-slate-400">Valor líquido</p>
             <p className="tabular mt-1 text-[30px] font-semibold leading-tight tracking-tight text-slate-900">
@@ -296,7 +307,7 @@ export function OperationDetailPage() {
               value={operation.effectiveMonthlyRate === null ? '—' : `${formatPercent(operation.effectiveMonthlyRate)} a.m.`}
             />
             <SummaryRow
-              label="Taxa efetiva anual"
+              label="Taxa efetiva anual (base 360)"
               value={operation.effectiveAnnualRate === null ? '—' : `${formatPercent(operation.effectiveAnnualRate)} a.a.`}
             />
           </div>

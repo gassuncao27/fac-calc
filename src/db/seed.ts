@@ -50,6 +50,9 @@ export async function loadDemoData(): Promise<void> {
     fixedFeeCents: 0,
     percentageFee: 0,
     otherExpensesCents: 0,
+    iofEnabled: false,
+    iofDailyRate: 0.0082,
+    iofAdditionalRate: 0.95,
   };
 
   // 1. Operação típica com 3 duplicatas, fechada
@@ -60,6 +63,7 @@ export async function loadDemoData(): Promise<void> {
     status: 'fechada',
     monthlyRate: 2.5,
     fixedFeeCents: 5_000,
+    iofEnabled: true,
     receivables: [
       { id: generateId(), documentNumber: 'DUP-1041', nominalAmountCents: 1_000_000, dueDate: iso(addDays(today, 12)), expensesCents: 0 },
       { id: generateId(), documentNumber: 'DUP-1042', nominalAmountCents: 1_500_000, dueDate: iso(addDays(today, 27)), expensesCents: 0 },

@@ -33,6 +33,14 @@ export interface Operation {
   fixedFeeCents: number;
   percentageFee: number; // % sobre o valor nominal
   otherExpensesCents: number;
+  /** IOF incidiu nesta operação? */
+  iofEnabled: boolean;
+  /** Alíquotas vigentes no momento do cálculo (ficam gravadas na operação) */
+  iofDailyRate: number;
+  iofAdditionalRate: number;
+  iofPrincipalCents: number;
+  iofAdditionalCents: number;
+  iofAmountCents: number;
   nominalAmountCents: number;
   discountAmountCents: number;
   totalFeesCents: number;
@@ -64,6 +72,12 @@ export interface Settings {
   id: 'app';
   companyName: string;
   companyDocument: string;
+  /** Empresa é factoring? Se sim, o IOF já vem marcado em novas operações. */
+  isFactoring: boolean;
+  /** Alíquota diária do IOF em % (muda por decreto — por isso é configurável) */
+  iofDailyRate: number;
+  /** Alíquota adicional do IOF em % */
+  iofAdditionalRate: number;
   defaultRate: number;
   defaultDayBase: number;
   defaultFixedFeeCents: number;

@@ -61,6 +61,12 @@ export function generateOperationPdf(
     ['Status', operationStatusLabel(operation.status)],
     ['Taxa comercial', `${formatPercent(operation.monthlyRate)} a.m.`],
     ['Base de dias', String(operation.dayBase)],
+    [
+      'IOF',
+      operation.iofEnabled
+        ? `${formatPercent(operation.iofDailyRate, 4)} a.d. + ${formatPercent(operation.iofAdditionalRate)}`
+        : 'Não incide',
+    ],
   ];
   doc.setFontSize(9);
   const colWidth = (pageWidth - margin * 2) / 3;
@@ -114,6 +120,12 @@ export function generateOperationPdf(
     ['Deságio', formatCents(operation.discountAmountCents), false],
     ['Tarifas', formatCents(operation.totalFeesCents), false],
     ['Outras despesas', formatCents(operation.totalExpensesCents), false],
+    ...((operation.iofAmountCents ?? 0) > 0
+      ? ([
+          ['IOF por prazo', formatCents(operation.iofPrincipalCents), false],
+          ['IOF adicional', formatCents(operation.iofAdditionalCents), false],
+        ] as [string, string, boolean][])
+      : []),
     ['VALOR LÍQUIDO', formatCents(operation.netAmountCents), true],
     [
       'Taxa efetiva',
@@ -122,7 +134,9 @@ export function generateOperationPdf(
     ],
     [
       'Taxa efetiva anual',
-      operation.effectiveAnnualRate === null ? '—' : `${formatPercent(operation.effectiveAnnualRate)} a.a.`,
+      operation.effectiveAnnualRate === null
+        ? '—'
+        : `${formatPercent(operation.effectiveAnnualRate)} a.a.`,
       false,
     ],
   ];

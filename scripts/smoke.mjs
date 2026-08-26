@@ -67,6 +67,22 @@ const summaryText = await page.textContent('main aside');
 check('Resumo exibe taxa efetiva mensal', /Taxa efetiva/.test(summaryText ?? ''));
 await page.screenshot({ path: `${shotsDir}/03-nova-operacao.png` });
 
+// 3b. IOF: liga o imposto e confere que o líquido cai
+const liquidoSemIof = await page.textContent('main aside');
+await page.click('text=Incidir IOF');
+await page.waitForTimeout(300);
+const resumoComIof = await page.textContent('main aside');
+check('IOF: alternar recalcula o resumo', resumoComIof !== liquidoSemIof);
+check('IOF: linha de IOF aparece no resumo', /IOF/.test(resumoComIof ?? ''));
+// 25.000 nominal − 900 deságio = 24.100 de base
+// IOF = 24.100×0,0082%×(rateio dos prazos) + 24.100×0,95%  →  líquido < 24.100
+const liquidoIof = (resumoComIof ?? '').match(/R\$\s*23\.\d{3},\d{2}/);
+check('IOF: valor líquido reduzido para a faixa esperada', liquidoIof !== null, liquidoIof?.[0] ?? 'não encontrado');
+// desliga de volta para manter o restante do teste com os valores originais
+await page.click('text=Incidir IOF');
+await page.waitForSelector('text=R$ 24.100,00');
+check('IOF: desmarcar restaura o líquido original', true);
+
 // 4. Salvar
 await page.click('button:has-text("Salvar operação")');
 await page.waitForSelector('text=/Operação OP-\\d{4}-\\d{6} salva/');

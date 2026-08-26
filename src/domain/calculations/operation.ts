@@ -4,6 +4,7 @@ import { roundCents } from '../money';
 import { averageTermDays } from './averageTerm';
 import { buildOperationCashflows } from './cashflows';
 import { effectiveMonthlyRate, monthlyToAnnual } from './effectiveRate';
+import { calculateIof } from './iof';
 import { getDiscountMethod } from './methods';
 
 export interface ReceivableCalcInput {
@@ -23,6 +24,12 @@ export interface OperationCalcInput {
   fixedFeeCents: number;
   percentageFee: number; // % sobre o nominal
   otherExpensesCents: number;
+  /** IOF incide nesta operação? (padrão: não) */
+  iofEnabled?: boolean;
+  /** Alíquota diária do IOF em % (0.0082 = 0,0082% a.d.) */
+  iofDailyRate?: number;
+  /** Alíquota adicional do IOF em % (0.95 = 0,95%) */
+  iofAdditionalRate?: number;
   receivables: ReceivableCalcInput[];
 }
 
@@ -42,6 +49,14 @@ export interface OperationCalcResult {
   feesAmountCents: number;
   /** Outras despesas da operação + despesas por título */
   expensesAmountCents: number;
+  /** IOF total (principal + adicional); zero quando não incide */
+  iofAmountCents: number;
+  /** IOF por prazo */
+  iofPrincipalCents: number;
+  /** IOF adicional */
+  iofAdditionalCents: number;
+  /** Base sobre a qual o IOF foi apurado (líquido antes do IOF) */
+  iofBaseCents: number;
   netAmountCents: number;
   effectiveMonthlyRate: number | null; // % a.m.
   effectiveAnnualRate: number | null; // % a.a.
@@ -82,7 +97,22 @@ export function calculateOperation(input: OperationCalcInput): OperationCalcResu
   const feesAmountCents = input.fixedFeeCents + percentageFeeCents;
   const expensesAmountCents = input.otherExpensesCents + receivableExpensesCents;
 
-  const netAmountCents = nominalAmountCents - discountAmountCents - feesAmountCents - expensesAmountCents;
+  // Líquido antes do IOF — é também a base de cálculo do imposto.
+  const netBeforeIofCents =
+    nominalAmountCents - discountAmountCents - feesAmountCents - expensesAmountCents;
+
+  const iof = input.iofEnabled
+    ? calculateIof({
+        baseCents: netBeforeIofCents,
+        dailyRate: input.iofDailyRate ?? 0,
+        additionalRate: input.iofAdditionalRate ?? 0,
+        // Rateia a base entre os títulos pelo líquido que cada um gera,
+        // pois o IOF por prazo depende dos dias de cada título.
+        items: receivables.map((r) => ({ days: r.days, weightCents: r.netAmountCents })),
+      })
+    : { principalCents: 0, additionalCents: 0, totalCents: 0 };
+
+  const netAmountCents = netBeforeIofCents - iof.totalCents;
 
   const term = averageTermDays(receivables);
 
@@ -103,6 +133,10 @@ export function calculateOperation(input: OperationCalcInput): OperationCalcResu
     discountAmountCents,
     feesAmountCents,
     expensesAmountCents,
+    iofAmountCents: iof.totalCents,
+    iofPrincipalCents: iof.principalCents,
+    iofAdditionalCents: iof.additionalCents,
+    iofBaseCents: input.iofEnabled ? netBeforeIofCents : 0,
     netAmountCents,
     effectiveMonthlyRate: effMonthly,
     effectiveAnnualRate: effAnnual,

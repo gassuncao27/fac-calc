@@ -179,9 +179,10 @@ src/
       averageTerm.ts    ← prazo médio ponderado
       effectiveRate.ts  ← taxa efetiva (XIRR mensal, Newton + bisseção)
       cashflows.ts      ← montagem dos fluxos de caixa
+      iof.ts            ← IOF/Crédito (diário por título + adicional)
       methods.ts        ← registro de métodos de cálculo (extensível)
       operation.ts      ← calculateOperation() — única porta de entrada da UI
-      __tests__/        ← 20 testes unitários
+      __tests__/        ← 31 testes unitários
   db/                   ← Dexie/IndexedDB (schema + dados de demonstração)
   services/             ← operações, clientes, configurações, PDF, CSV, backup
   components/           ← UI reutilizável (CurrencyInput, PercentInput, ReceivableTable,
@@ -201,13 +202,15 @@ scripts/
 
 - **Dinheiro em centavos (inteiros)** — somas exatas, sem erro de ponto flutuante; arredondamento só no resultado final de cada parcela de cálculo.
 - **Motor de cálculo desacoplado** — a UI só chama `calculateOperation({...})`. Novos métodos (desconto composto, taxa por dentro, fator…) entram registrando uma implementação em `methods.ts`, sem tocar em telas.
-- **Taxa efetiva** — TIR com datas irregulares (equivalente a XIRR), expressa em % a.m. com mês comercial de 30 dias; anual = (1+i)¹² − 1. Exibida separada da taxa comercial.
+- **Taxa efetiva** — TIR com datas irregulares, expressa em % a.m. com mês comercial de 30 dias; anual = (1+i)¹² − 1, ou seja **base 360**. Não é idêntica ao XIRR de planilha, que usa base 365 — por isso a interface diz "base 360". Calculada sobre o valor líquido efetivamente entregue (já descontado o IOF, quando incide).
 - **Número amigável** `OP-AAAA-NNNNNN` com contador local por ano + UUID interno.
 - **PDF sob demanda** — o chunk do jsPDF é carregado só ao gerar o PDF (mas fica precacheado pelo Service Worker, funcionando offline).
 - **CSV para Excel BR** — separador `;`, BOM UTF-8 e vírgula decimal.
 - **Exclusão de cliente preserva operações** (apenas desvincula).
 - **PIN local opcional** (4–6 dígitos, hash SHA-256) em Configurações — proteção de conveniência, sem login online.
-- **IOF** — lançado no campo "Outras despesas" na V1.
+- **IOF automático** — calculado pelo motor, não digitado à mão. Estrutura do Decreto 6.306/2007: alíquota **diária** aplicada ao prazo de cada título (limitada a 365 dias) mais a alíquota **adicional** fixa, ambas incidindo sobre o **valor líquido entregue ao cedente**. A base é apurada *antes* do próprio IOF, para não criar circularidade. O principal é apurado **por título** (cada um tem prazo próprio), rateando a base pelo líquido que cada título gera.
+- **Alíquotas de IOF são configuráveis, nunca constantes no código** — mudam por decreto. Ficam em Configurações, pré-preenchidas com 0,0082% a.d. + 0,95% adicional; **confira as vigentes antes de usar**. As alíquotas usadas ficam gravadas em cada operação, então recalcular uma operação antiga não altera o que foi fechado.
+- **"Empresa é factoring"** (Configurações) faz novas operações já virem com o IOF marcado; o usuário pode desmarcar caso a caso.
 - **Tailwind v3 + alvo Safari 14** — compatibilidade com iPads antigos (ver seção acima). Unidades `dvh` têm fallback em `vh` via `@supports`, e os campos usam fonte de 16px para o iOS não dar zoom ao focar.
 - **Caminhos relativos + rotas em hash** (`base: './'`, `HashRouter`) — o build roda em qualquer subpasta sem reconfiguração, e recarregar uma rota profunda nunca cai no 404 do GitHub Pages (que não tem fallback de SPA).
 

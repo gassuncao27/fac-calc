@@ -19,7 +19,7 @@ import { PercentInput } from '../components/inputs/PercentInput';
 import { DateInput } from '../components/inputs/DateInput';
 import { ReceivableTable } from '../components/ReceivableTable';
 import { OperationSummary } from '../components/OperationSummary';
-import { nowISO, todayISO } from '../utils/format';
+import { formatPercent, nowISO, todayISO } from '../utils/format';
 
 interface FormState {
   clientId: string | null;
@@ -32,6 +32,7 @@ interface FormState {
   fixedFeeCents: number | null;
   percentageFee: number | null;
   otherExpensesCents: number | null;
+  iofEnabled: boolean;
   notes: string;
   receivables: ReceivableDraft[];
 }
@@ -48,6 +49,8 @@ function emptyForm(settings: Settings): FormState {
     fixedFeeCents: settings.defaultFixedFeeCents || null,
     percentageFee: settings.defaultPercentageFee || null,
     otherExpensesCents: null,
+    // Factoring paga IOF na maioria das operações: já vem marcado.
+    iofEnabled: settings.isFactoring,
     notes: '',
     receivables: [],
   };
@@ -83,6 +86,7 @@ export function OperationFormPage() {
           fixedFeeCents: operation.fixedFeeCents || null,
           percentageFee: operation.percentageFee || null,
           otherExpensesCents: operation.otherExpensesCents || null,
+          iofEnabled: operation.iofEnabled ?? false,
           notes: operation.notes ?? '',
           receivables: receivables.map((r) => ({
             id: r.id,
@@ -112,9 +116,12 @@ export function OperationFormPage() {
       fixedFeeCents: form.fixedFeeCents ?? 0,
       percentageFee: form.percentageFee ?? 0,
       otherExpensesCents: form.otherExpensesCents ?? 0,
+      iofEnabled: form.iofEnabled,
+      iofDailyRate: settings?.iofDailyRate ?? 0,
+      iofAdditionalRate: settings?.iofAdditionalRate ?? 0,
       receivables: form.receivables,
     });
-  }, [form]);
+  }, [form, settings]);
 
   function toDraft(f: FormState): OperationDraft {
     return {
@@ -128,6 +135,9 @@ export function OperationFormPage() {
       fixedFeeCents: f.fixedFeeCents ?? 0,
       percentageFee: f.percentageFee ?? 0,
       otherExpensesCents: f.otherExpensesCents ?? 0,
+      iofEnabled: f.iofEnabled,
+      iofDailyRate: settings?.iofDailyRate ?? 0,
+      iofAdditionalRate: settings?.iofAdditionalRate ?? 0,
       notes: f.notes || undefined,
       receivables: f.receivables,
     };
@@ -180,6 +190,12 @@ export function OperationFormPage() {
         fixedFeeCents: form.fixedFeeCents ?? 0,
         percentageFee: form.percentageFee ?? 0,
         otherExpensesCents: form.otherExpensesCents ?? 0,
+        iofEnabled: form.iofEnabled,
+        iofDailyRate: settings.iofDailyRate,
+        iofAdditionalRate: settings.iofAdditionalRate,
+        iofPrincipalCents: result.iofPrincipalCents,
+        iofAdditionalCents: result.iofAdditionalCents,
+        iofAmountCents: result.iofAmountCents,
         nominalAmountCents: result.nominalAmountCents,
         discountAmountCents: result.discountAmountCents,
         totalFeesCents: result.feesAmountCents,
@@ -303,13 +319,31 @@ export function OperationFormPage() {
               <Field label="Tarifa percentual" hint="Sobre o valor nominal total.">
                 <PercentInput value={form.percentageFee} onChangeValue={(percentageFee) => patch({ percentageFee })} />
               </Field>
-              <Field label="Outras despesas" hint="IOF e demais custos, se aplicável.">
+              <Field label="Outras despesas" hint="Cartório, cobrança e afins. O IOF é calculado à parte.">
                 <CurrencyInput
                   valueCents={form.otherExpensesCents}
                   onChangeCents={(otherExpensesCents) => patch({ otherExpensesCents })}
                 />
               </Field>
             </div>
+            {/* IOF: marcado por padrão quando a empresa é factoring */}
+            <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <input
+                type="checkbox"
+                checked={form.iofEnabled}
+                onChange={(e) => patch({ iofEnabled: e.target.checked })}
+                className="mt-0.5 size-5 shrink-0 accent-slate-900"
+              />
+              <span className="min-w-0">
+                <span className="block font-medium text-slate-900">Incidir IOF</span>
+                <span className="mt-0.5 block text-sm text-slate-500">
+                  {formatPercent(settings.iofDailyRate, 4)} ao dia (limitado a 365 dias) +{' '}
+                  {formatPercent(settings.iofAdditionalRate)} adicional, sobre o valor líquido entregue.
+                  Alíquotas em Configurações.
+                </span>
+              </span>
+            </label>
+
             <div className="mt-4">
               <Field label="Observações">
                 <Textarea
