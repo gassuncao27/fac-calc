@@ -96,6 +96,28 @@ await page.click('text=Incidir IOF');
 await page.waitForSelector('text=R$ 24.100,00');
 check('IOF: desmarcar restaura o líquido original', true);
 
+// 3c. Regressão: digitar a data à mão passa por valores incompletos.
+// Uma exceção aqui derrubava o React e deixava a tela em branco.
+await page.click('button:has-text("Adicionar título")');
+const campoData = page.locator('[data-row="2"][data-col="due"]');
+await campoData.click();
+for (const tecla of ['0', '8', '0', '1', '2', '0', '2', '7']) {
+  await page.keyboard.press(tecla);
+  await page.waitForTimeout(60);
+}
+await page.waitForTimeout(300);
+const telaViva = await page.isVisible('text=Salvar operação');
+check('Digitar a data à mão não derruba a tela', telaViva);
+// limpar o campo também não pode quebrar
+await campoData.click();
+for (let i = 0; i < 10; i++) await page.keyboard.press('Backspace');
+await page.waitForTimeout(300);
+check('Apagar a data não derruba a tela', await page.isVisible('text=Salvar operação'));
+// remove a linha de teste
+await page.click('button[aria-label="Excluir título 3"]');
+await page.waitForSelector('text=R$ 24.100,00');
+check('Resumo volta ao normal após remover a linha', true);
+
 // 4. Salvar
 await page.click('button:has-text("Salvar operação")');
 await page.waitForSelector('text=/Operação OP-\\d{4}-\\d{6} salva/');

@@ -1,6 +1,5 @@
 import type { CalculationMethod } from '../../types/models';
-import { addDays, format, parseISO } from 'date-fns';
-import { countDays } from '../dayCount';
+import { addDaysISO, countDays } from '../dayCount';
 import { roundCents } from '../money';
 import { averageTermDays } from './averageTerm';
 import { buildOperationCashflows } from './cashflows';
@@ -84,10 +83,7 @@ export function calculateOperation(input: OperationCalcInput): OperationCalcResu
   const compensationDays = Math.max(0, Math.trunc(input.compensationDays ?? 0));
 
   const receivables: ReceivableCalcResult[] = input.receivables.map((r) => {
-    const compensationDate =
-      compensationDays > 0
-        ? format(addDays(parseISO(r.dueDate), compensationDays), 'yyyy-MM-dd')
-        : r.dueDate;
+    const compensationDate = addDaysISO(r.dueDate, compensationDays);
     const dueDays = Math.max(0, countDays(input.operationDate, r.dueDate));
     // O prazo que remunera a operação vai até a compensação, não até o vencimento.
     const days = Math.max(0, countDays(input.operationDate, compensationDate));

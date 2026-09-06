@@ -1,4 +1,5 @@
 import { HashRouter, Route, Routes } from 'react-router-dom';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import { PinGate } from './components/PinLock';
 import { ToastProvider } from './components/ui/Toast';
@@ -12,10 +13,11 @@ import { BackupPage } from './pages/Backup';
 
 export function App() {
   return (
-    <ToastProvider>
-      <PinGate>
-        <HashRouter>
-          <Routes>
+    <ErrorBoundary>
+      <ToastProvider>
+        <PinGate>
+          <HashRouter>
+            <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/operacoes" element={<OperationsListPage />} />
@@ -27,9 +29,10 @@ export function App() {
               <Route path="/backup" element={<BackupPage />} />
               <Route path="*" element={<DashboardPage />} />
             </Route>
-          </Routes>
-        </HashRouter>
-      </PinGate>
-    </ToastProvider>
+            </Routes>
+          </HashRouter>
+        </PinGate>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }

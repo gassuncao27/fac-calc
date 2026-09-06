@@ -326,4 +326,63 @@ describe('calculateOperation', () => {
     // Mais dias de prazo → mais IOF por prazo
     expect(comComp.iofPrincipalCents).toBeGreaterThan(semComp.iofPrincipalCents);
   });
+
+  // ---- Datas incompletas (usuário digitando à mão) ----
+  // Regressão: o campo de data passa por '' e por anos parciais enquanto se
+  // digita. Uma exceção aqui derruba o React e deixa a tela em branco.
+
+  it.each([
+    ['vazia', ''],
+    ['parcial', '0000-00-00'],
+    ['ano de um dígito', '0008-01-01'],
+    ['texto inválido', 'abc'],
+    ['incompleta', '2026-1'],
+  ])('não lança com data de vencimento %s', (_rotulo, dueDate) => {
+    const executar = () =>
+      calculateOperation(
+        baseInput({
+          compensationDays: 2,
+          receivables: [
+            { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate },
+          ],
+        }),
+      );
+    expect(executar).not.toThrow();
+    const r = executar();
+    expect(Number.isFinite(r.netAmountCents)).toBe(true);
+    expect(Number.isFinite(r.discountAmountCents)).toBe(true);
+  });
+
+  it('data da operação inválida também não quebra o cálculo', () => {
+    const executar = () =>
+      calculateOperation(
+        baseInput({
+          operationDate: '',
+          compensationDays: 2,
+          receivables: [
+            { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-10-25' },
+          ],
+        }),
+      );
+    expect(executar).not.toThrow();
+    expect(executar().receivables[0].days).toBe(0);
+  });
+
+  it('título com data vazia não contamina o total da operação', () => {
+    const r = calculateOperation(
+      baseInput({
+        compensationDays: 2,
+        receivables: [
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-28' },
+          { id: '2', documentNumber: '002', nominalAmountCents: 500_000, dueDate: '' },
+        ],
+      }),
+    );
+    expect(Number.isFinite(r.nominalAmountCents)).toBe(true);
+    expect(r.nominalAmountCents).toBe(1_500_000);
+    // O título válido segue calculado normalmente (45 + 2 dias)
+    expect(r.receivables[0].days).toBe(47);
+    expect(r.receivables[1].days).toBe(0);
+    expect(Number.isFinite(r.netAmountCents)).toBe(true);
+  });
 });

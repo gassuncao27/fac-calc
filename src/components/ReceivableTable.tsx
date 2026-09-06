@@ -1,6 +1,5 @@
 import { useRef, type KeyboardEvent } from 'react';
 import { Copy, Plus, Trash2 } from 'lucide-react';
-import { addDays, format, parseISO } from 'date-fns';
 import type { ReceivableDraft } from '../services/operationService';
 import type { ReceivableCalcResult } from '../domain/calculations/operation';
 import { CurrencyInput } from './inputs/CurrencyInput';
@@ -9,6 +8,7 @@ import { inputClass } from './ui/Field';
 import { Button } from './ui/Button';
 import { formatCents, formatDate } from '../utils/format';
 import { generateId } from '../utils/id';
+import { addDaysISO } from '../domain/dayCount';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 
 interface ReceivableTableProps {
@@ -59,10 +59,9 @@ export function ReceivableTable({ rows, calcRows, operationDate, onChange }: Rec
       id: generateId(),
       documentNumber: String(rows.length + 1).padStart(3, '0'),
       nominalAmountCents: 0,
-      // sugere +30 dias sobre o último vencimento (ou sobre a data da operação)
-      dueDate: last?.dueDate
-        ? format(addDays(parseISO(last.dueDate), 30), 'yyyy-MM-dd')
-        : format(addDays(parseISO(operationDate), 30), 'yyyy-MM-dd'),
+      // sugere +30 dias sobre o último vencimento (ou sobre a data da operação).
+      // addDaysISO nunca lança: se a data estiver incompleta, devolve como está.
+      dueDate: addDaysISO(last?.dueDate || operationDate, 30),
       expensesCents: 0,
     };
   }
