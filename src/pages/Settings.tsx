@@ -197,6 +197,21 @@ export function SettingsPage() {
                 ))}
               </Select>
             </Field>
+            <Field label="Compensação padrão (D + x)" hint="Dias após o vencimento até o dinheiro entrar.">
+              <TextInput
+                type="number"
+                min={0}
+                max={180}
+                step={1}
+                inputMode="numeric"
+                value={String(settings.defaultCompensationDays)}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  patch({ defaultCompensationDays: Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0 });
+                }}
+                className="tabular text-right"
+              />
+            </Field>
             <Field label="Casas decimais das taxas">
               <Select
                 value={settings.decimalPlaces}

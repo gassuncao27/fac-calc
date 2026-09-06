@@ -41,6 +41,7 @@ const operationSchema = z.object({
   fixedFeeCents: z.number(),
   percentageFee: z.number(),
   otherExpensesCents: z.number(),
+  compensationDays: z.number().optional().default(0),
   // Opcionais: backups gerados antes do IOF continuam sendo aceitos
   iofEnabled: z.boolean().optional().default(false),
   iofDailyRate: z.number().optional().default(0),
@@ -67,13 +68,16 @@ const receivableSchema = z.object({
   documentNumber: z.string(),
   nominalAmountCents: z.number(),
   dueDate: z.string(),
+  compensationDate: z.string().optional(),
   days: z.number(),
   rate: z.number(),
   discountAmountCents: z.number(),
   expensesCents: z.number(),
   netAmountCents: z.number(),
   notes: z.string().optional(),
-});
+})
+  // Títulos gravados antes da compensação: a data de compensação é o vencimento.
+  .transform((r) => ({ ...r, compensationDate: r.compensationDate ?? r.dueDate }));
 
 const settingsSchema = z
   .object({
@@ -83,6 +87,7 @@ const settingsSchema = z
     isFactoring: z.boolean().optional().default(false),
     iofDailyRate: z.number().optional().default(0.0082),
     iofAdditionalRate: z.number().optional().default(0.95),
+    defaultCompensationDays: z.number().optional().default(2),
     defaultRate: z.number(),
     defaultDayBase: z.number(),
     defaultFixedFeeCents: z.number(),

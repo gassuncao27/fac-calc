@@ -50,6 +50,7 @@ export async function loadDemoData(): Promise<void> {
     fixedFeeCents: 0,
     percentageFee: 0,
     otherExpensesCents: 0,
+    compensationDays: 2,
     iofEnabled: false,
     iofDailyRate: 0.0082,
     iofAdditionalRate: 0.95,

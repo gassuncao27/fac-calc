@@ -7,7 +7,7 @@ import { CurrencyInput } from './inputs/CurrencyInput';
 import { DateInput } from './inputs/DateInput';
 import { inputClass } from './ui/Field';
 import { Button } from './ui/Button';
-import { formatCents } from '../utils/format';
+import { formatCents, formatDate } from '../utils/format';
 import { generateId } from '../utils/id';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 
@@ -157,7 +157,9 @@ export function ReceivableTable({ rows, calcRows, operationDate, onChange }: Rec
                 <th className="px-3 py-3 font-medium">Documento</th>
                 <th className="px-3 py-3 text-right font-medium">Valor nominal</th>
                 <th className="px-3 py-3 font-medium">Vencimento</th>
-                <th className="px-2 py-3 text-right font-medium">Dias</th>
+                <th className="px-2 py-3 text-right font-medium" title="Dias até a compensação">
+                  Dias
+                </th>
                 <th className="px-3 py-3 text-right font-medium">Desconto</th>
                 <th className="px-3 py-3 text-right font-medium">Líquido</th>
                 <th className="px-2 py-3" aria-label="Ações" />
@@ -199,7 +201,16 @@ export function ReceivableTable({ rows, calcRows, operationDate, onChange }: Rec
                         className="h-10 border-transparent bg-transparent px-2 shadow-none focus:bg-white"
                       />
                     </td>
-                    <td className="tabular px-2 py-1.5 text-right text-slate-500">{calc?.days ?? '—'}</td>
+                    <td
+                      className="tabular px-2 py-1.5 text-right text-slate-500"
+                      title={
+                        calc && calc.compensationDate !== calc.dueDate
+                          ? `Vencimento ${formatDate(calc.dueDate)} + compensação = ${formatDate(calc.compensationDate)}`
+                          : undefined
+                      }
+                    >
+                      {calc?.days ?? '—'}
+                    </td>
                     <td className="tabular truncate px-3 py-1.5 text-right text-slate-500">
                       {calc ? formatCents(calc.discountAmountCents) : '—'}
                     </td>
@@ -267,6 +278,14 @@ export function ReceivableTable({ rows, calcRows, operationDate, onChange }: Rec
                     <dt className="text-slate-400">Dias</dt>
                     <dd className="tabular font-medium text-slate-600">{calc?.days ?? '—'}</dd>
                   </div>
+                  {calc && calc.compensationDate !== calc.dueDate && (
+                    <div className="flex items-baseline gap-1.5">
+                      <dt className="text-slate-400">Compensa em</dt>
+                      <dd className="tabular font-medium text-slate-600">
+                        {formatDate(calc.compensationDate)}
+                      </dd>
+                    </div>
+                  )}
                   <div className="flex items-baseline gap-1.5">
                     <dt className="text-slate-400">Desconto</dt>
                     <dd className="tabular font-medium text-slate-600">

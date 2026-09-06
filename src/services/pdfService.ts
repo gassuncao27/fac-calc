@@ -61,6 +61,7 @@ export function generateOperationPdf(
     ['Status', operationStatusLabel(operation.status)],
     ['Taxa comercial', `${formatPercent(operation.monthlyRate)} a.m.`],
     ['Base de dias', String(operation.dayBase)],
+    ['Compensação', operation.compensationDays ? `D + ${operation.compensationDays}` : 'No vencimento'],
     [
       'IOF',
       operation.iofEnabled
@@ -82,31 +83,34 @@ export function generateOperationPdf(
   });
   y += Math.ceil(info.length / 3) * 12 + 4;
 
-  // Tabela de títulos
+  // Tabela de títulos — ganha a coluna "Compensação" quando há D+x
+  const temCompensacao = (operation.compensationDays ?? 0) > 0;
+  const alinhamentoDireita = Object.fromEntries(
+    (temCompensacao ? [1, 4, 5, 6, 7, 8] : [1, 3, 4, 5, 6, 7]).map((i) => [i, { halign: 'right' as const }]),
+  );
+
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
-    head: [['Documento', 'Valor nominal', 'Vencimento', 'Dias', 'Taxa', 'Desconto', 'Despesas', 'Líquido']],
+    head: [
+      temCompensacao
+        ? ['Documento', 'Valor nominal', 'Vencimento', 'Compensação', 'Dias', 'Taxa', 'Desconto', 'Despesas', 'Líquido']
+        : ['Documento', 'Valor nominal', 'Vencimento', 'Dias', 'Taxa', 'Desconto', 'Despesas', 'Líquido'],
+    ],
     body: receivables.map((r) => [
       r.documentNumber || '—',
       formatCents(r.nominalAmountCents),
       formatDate(r.dueDate),
+      ...(temCompensacao ? [formatDate(r.compensationDate ?? r.dueDate)] : []),
       String(r.days),
       formatPercent(r.rate),
       formatCents(r.discountAmountCents),
       formatCents(r.expensesCents),
       formatCents(r.netAmountCents),
     ]),
-    styles: { font: 'helvetica', fontSize: 8.5, textColor: SLATE, cellPadding: 2.2 },
+    styles: { font: 'helvetica', fontSize: temCompensacao ? 8 : 8.5, textColor: SLATE, cellPadding: 2.2 },
     headStyles: { fillColor: '#f1f5f9', textColor: GRAY, fontStyle: 'bold' },
-    columnStyles: {
-      1: { halign: 'right' },
-      3: { halign: 'right' },
-      4: { halign: 'right' },
-      5: { halign: 'right' },
-      6: { halign: 'right' },
-      7: { halign: 'right' },
-    },
+    columnStyles: alinhamentoDireita,
     alternateRowStyles: { fillColor: '#fafafa' },
   });
 

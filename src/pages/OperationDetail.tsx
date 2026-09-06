@@ -196,6 +196,10 @@ export function OperationDetailPage() {
               <InfoItem label="Tipo" value={operationTypeLabel(operation.operationType)} />
               <InfoItem label="Taxa comercial" value={`${formatPercent(operation.monthlyRate)} a.m.`} />
               <InfoItem label="Base de cálculo" value={`${operation.dayBase} dias`} />
+              <InfoItem
+                label="Compensação"
+                value={operation.compensationDays ? `D + ${operation.compensationDays}` : 'No vencimento'}
+              />
               <InfoItem label="Criada em" value={formatDate(operation.createdAt.slice(0, 10))} />
               <InfoItem
                 label="IOF"
@@ -234,6 +238,14 @@ export function OperationDetailPage() {
                         <dt className="text-[12px] text-slate-400">Dias</dt>
                         <dd className="tabular font-medium text-slate-700">{r.days}</dd>
                       </div>
+                      {r.compensationDate && r.compensationDate !== r.dueDate && (
+                        <div>
+                          <dt className="text-[12px] text-slate-400">Compensa em</dt>
+                          <dd className="tabular font-medium text-slate-700">
+                            {formatDate(r.compensationDate)}
+                          </dd>
+                        </div>
+                      )}
                       <div>
                         <dt className="text-[12px] text-slate-400">Desconto</dt>
                         <dd className="tabular font-medium text-slate-700">{formatCents(r.discountAmountCents)}</dd>
@@ -273,7 +285,16 @@ export function OperationDetailPage() {
                         <td className="truncate px-3 py-3.5 font-medium text-slate-900">{r.documentNumber || '—'}</td>
                         <td className="tabular px-3 py-3.5 text-right text-slate-700">{formatCents(r.nominalAmountCents)}</td>
                         <td className="tabular px-3 py-3.5 text-slate-600">{formatDate(r.dueDate)}</td>
-                        <td className="tabular px-2 py-3.5 text-right text-slate-500">{r.days}</td>
+                        <td
+                          className="tabular px-2 py-3.5 text-right text-slate-500"
+                          title={
+                            r.compensationDate && r.compensationDate !== r.dueDate
+                              ? `Compensa em ${formatDate(r.compensationDate)}`
+                              : undefined
+                          }
+                        >
+                          {r.days}
+                        </td>
                         <td className="tabular px-3 py-3.5 text-right text-slate-500">{formatCents(r.discountAmountCents)}</td>
                         <td className="tabular px-3 py-3.5 text-right font-medium text-slate-900">{formatCents(r.netAmountCents)}</td>
                       </tr>

@@ -178,11 +178,11 @@ src/
       discount.ts       ← desconto simples por taxa mensal
       averageTerm.ts    ← prazo médio ponderado
       effectiveRate.ts  ← taxa efetiva (XIRR mensal, Newton + bisseção)
-      cashflows.ts      ← montagem dos fluxos de caixa
+      cashflows.ts      ← fluxos de caixa (entrada na compensação, não no vencimento)
       iof.ts            ← IOF/Crédito (diário por título + adicional)
       methods.ts        ← registro de métodos de cálculo (extensível)
       operation.ts      ← calculateOperation() — única porta de entrada da UI
-      __tests__/        ← 31 testes unitários
+      __tests__/        ← 38 testes unitários
   db/                   ← Dexie/IndexedDB (schema + dados de demonstração)
   services/             ← operações, clientes, configurações, PDF, CSV, backup
   components/           ← UI reutilizável (CurrencyInput, PercentInput, ReceivableTable,
@@ -208,6 +208,7 @@ scripts/
 - **CSV para Excel BR** — separador `;`, BOM UTF-8 e vírgula decimal.
 - **Exclusão de cliente preserva operações** (apenas desvincula).
 - **PIN local opcional** (4–6 dígitos, hash SHA-256) em Configurações — proteção de conveniência, sem login online.
+- **Compensação D+x** — dias somados ao vencimento de cada título até o dinheiro ficar disponível (cheque que compensa em D+2, por exemplo). Alonga o prazo, aumenta o deságio e reduz o líquido. Vale para a operação inteira, com padrão configurável (vem D+2) e ajuste caso a caso em Nova operação. O prazo médio, o IOF e a **taxa efetiva** passam a usar a data de compensação, não a de vencimento — é quando o dinheiro de fato entra. Operações salvas antes deste campo continuam com D+0, sem alteração de valores.
 - **IOF automático** — calculado pelo motor, não digitado à mão. Estrutura do Decreto 6.306/2007: alíquota **diária** aplicada ao prazo de cada título (limitada a 365 dias) mais a alíquota **adicional** fixa, ambas incidindo sobre o **valor líquido entregue ao cedente**. A base é apurada *antes* do próprio IOF, para não criar circularidade. O principal é apurado **por título** (cada um tem prazo próprio), rateando a base pelo líquido que cada título gera.
 - **Alíquotas de IOF são configuráveis, nunca constantes no código** — mudam por decreto. Ficam em Configurações, pré-preenchidas com 0,0082% a.d. + 0,95% adicional; **confira as vigentes antes de usar**. As alíquotas usadas ficam gravadas em cada operação, então recalcular uma operação antiga não altera o que foi fechado.
 - **"Empresa é factoring"** (Configurações) faz novas operações já virem com o IOF marcado; o usuário pode desmarcar caso a caso.

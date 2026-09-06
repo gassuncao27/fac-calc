@@ -1,4 +1,5 @@
 import type { CalculationMethod } from '../../types/models';
+import { addDays, format, parseISO } from 'date-fns';
 import { countDays } from '../dayCount';
 import { roundCents } from '../money';
 import { averageTermDays } from './averageTerm';
@@ -24,6 +25,11 @@ export interface OperationCalcInput {
   fixedFeeCents: number;
   percentageFee: number; // % sobre o nominal
   otherExpensesCents: number;
+  /**
+   * Compensação D+x: dias somados ao vencimento de cada título até o dinheiro
+   * ficar disponível. Alonga o prazo, aumenta o deságio e reduz o líquido.
+   */
+  compensationDays?: number;
   /** IOF incide nesta operação? (padrão: não) */
   iofEnabled?: boolean;
   /** Alíquota diária do IOF em % (0.0082 = 0,0082% a.d.) */
@@ -34,6 +40,11 @@ export interface OperationCalcInput {
 }
 
 export interface ReceivableCalcResult extends ReceivableCalcInput {
+  /** Data em que o título compensa (vencimento + D+x) */
+  compensationDate: string;
+  /** Dias até o vencimento (sem a compensação) */
+  dueDays: number;
+  /** Dias até a compensação — é o prazo usado no cálculo */
   days: number;
   rate: number;
   discountAmountCents: number;
@@ -70,8 +81,16 @@ export interface OperationCalcResult {
 export function calculateOperation(input: OperationCalcInput): OperationCalcResult {
   const method = getDiscountMethod(input.method);
 
+  const compensationDays = Math.max(0, Math.trunc(input.compensationDays ?? 0));
+
   const receivables: ReceivableCalcResult[] = input.receivables.map((r) => {
-    const days = Math.max(0, countDays(input.operationDate, r.dueDate));
+    const compensationDate =
+      compensationDays > 0
+        ? format(addDays(parseISO(r.dueDate), compensationDays), 'yyyy-MM-dd')
+        : r.dueDate;
+    const dueDays = Math.max(0, countDays(input.operationDate, r.dueDate));
+    // O prazo que remunera a operação vai até a compensação, não até o vencimento.
+    const days = Math.max(0, countDays(input.operationDate, compensationDate));
     const discountAmountCents = method.discountCents({
       nominalAmountCents: r.nominalAmountCents,
       monthlyRate: input.monthlyRate,
@@ -81,6 +100,8 @@ export function calculateOperation(input: OperationCalcInput): OperationCalcResu
     const expensesCents = r.expensesCents ?? 0;
     return {
       ...r,
+      compensationDate,
+      dueDays,
       days,
       rate: input.monthlyRate,
       discountAmountCents,
@@ -119,7 +140,14 @@ export function calculateOperation(input: OperationCalcInput): OperationCalcResu
   let effMonthly: number | null = null;
   let effAnnual: number | null = null;
   if (netAmountCents > 0 && receivables.length > 0) {
-    const cashflows = buildOperationCashflows(input.operationDate, netAmountCents, receivables);
+    const cashflows = buildOperationCashflows(
+      input.operationDate,
+      netAmountCents,
+      receivables.map((r) => ({
+        settlementDate: r.compensationDate,
+        nominalAmountCents: r.nominalAmountCents,
+      })),
+    );
     const monthly = effectiveMonthlyRate(cashflows);
     if (monthly !== null && Number.isFinite(monthly)) {
       effMonthly = monthly * 100;

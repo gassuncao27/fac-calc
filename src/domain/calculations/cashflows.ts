@@ -10,16 +10,19 @@ export interface Cashflow {
 /**
  * Monta os fluxos de caixa da operação sob a ótica da factoring:
  * - na data da operação, sai o valor líquido entregue ao cliente;
- * - em cada vencimento, entra o valor nominal do título.
+ * - na data de COMPENSAÇÃO de cada título, entra o valor nominal.
+ *
+ * Usa a compensação (vencimento + D+x) e não o vencimento, porque é quando
+ * o dinheiro fica de fato disponível — é isso que define o retorno real.
  */
 export function buildOperationCashflows(
   operationDate: string,
   netAmountCents: number,
-  receivables: { dueDate: string; nominalAmountCents: number }[],
+  receivables: { settlementDate: string; nominalAmountCents: number }[],
 ): Cashflow[] {
   return [
     { date: operationDate, amountCents: -netAmountCents },
-    ...receivables.map((r) => ({ date: r.dueDate, amountCents: r.nominalAmountCents })),
+    ...receivables.map((r) => ({ date: r.settlementDate, amountCents: r.nominalAmountCents })),
   ];
 }
 

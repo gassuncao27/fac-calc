@@ -31,6 +31,7 @@ export interface OperationDraft {
   fixedFeeCents: number;
   percentageFee: number;
   otherExpensesCents: number;
+  compensationDays: number;
   iofEnabled: boolean;
   iofDailyRate: number;
   iofAdditionalRate: number;
@@ -52,6 +53,7 @@ export async function saveOperation(draft: OperationDraft, existingId?: string):
     fixedFeeCents: draft.fixedFeeCents,
     percentageFee: draft.percentageFee,
     otherExpensesCents: draft.otherExpensesCents,
+    compensationDays: draft.compensationDays,
     iofEnabled: draft.iofEnabled,
     iofDailyRate: draft.iofDailyRate,
     iofAdditionalRate: draft.iofAdditionalRate,
@@ -92,6 +94,7 @@ export async function saveOperation(draft: OperationDraft, existingId?: string):
       fixedFeeCents: draft.fixedFeeCents,
       percentageFee: draft.percentageFee,
       otherExpensesCents: draft.otherExpensesCents,
+      compensationDays: draft.compensationDays,
       iofEnabled: draft.iofEnabled,
       iofDailyRate: draft.iofDailyRate,
       iofAdditionalRate: draft.iofAdditionalRate,
@@ -117,6 +120,7 @@ export async function saveOperation(draft: OperationDraft, existingId?: string):
       documentNumber: r.documentNumber,
       nominalAmountCents: r.nominalAmountCents,
       dueDate: r.dueDate,
+      compensationDate: r.compensationDate,
       days: r.days,
       rate: r.rate,
       discountAmountCents: r.discountAmountCents,
@@ -161,6 +165,7 @@ export async function duplicateOperation(id: string): Promise<Operation | null> 
     fixedFeeCents: operation.fixedFeeCents,
     percentageFee: operation.percentageFee,
     otherExpensesCents: operation.otherExpensesCents,
+    compensationDays: operation.compensationDays ?? 0,
     iofEnabled: operation.iofEnabled ?? false,
     iofDailyRate: operation.iofDailyRate ?? 0,
     iofAdditionalRate: operation.iofAdditionalRate ?? 0,

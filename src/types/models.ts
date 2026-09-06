@@ -33,6 +33,8 @@ export interface Operation {
   fixedFeeCents: number;
   percentageFee: number; // % sobre o valor nominal
   otherExpensesCents: number;
+  /** Compensação D+x: dias somados ao vencimento até o dinheiro ficar disponível */
+  compensationDays: number;
   /** IOF incidiu nesta operação? */
   iofEnabled: boolean;
   /** Alíquotas vigentes no momento do cálculo (ficam gravadas na operação) */
@@ -60,6 +62,9 @@ export interface Receivable {
   documentNumber: string;
   nominalAmountCents: number;
   dueDate: string; // yyyy-MM-dd
+  /** Vencimento + D+x — data em que o título compensa */
+  compensationDate: string;
+  /** Dias até a COMPENSAÇÃO (prazo usado no cálculo) */
   days: number;
   rate: number; // % a.m. aplicada
   discountAmountCents: number;
@@ -78,6 +83,8 @@ export interface Settings {
   iofDailyRate: number;
   /** Alíquota adicional do IOF em % */
   iofAdditionalRate: number;
+  /** Compensação padrão de novas operações (D+x) */
+  defaultCompensationDays: number;
   defaultRate: number;
   defaultDayBase: number;
   defaultFixedFeeCents: number;

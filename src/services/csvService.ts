@@ -27,11 +27,12 @@ function csvMoney(cents: number): string {
 
 export function exportReceivablesCsv(operation: Operation, receivables: Receivable[]): void {
   const rows: (string | number)[][] = [
-    ['Documento', 'Valor nominal', 'Vencimento', 'Dias', 'Taxa', 'Desconto', 'Despesas', 'Valor líquido'],
+    ['Documento', 'Valor nominal', 'Vencimento', 'Compensação', 'Dias', 'Taxa', 'Desconto', 'Despesas', 'Valor líquido'],
     ...receivables.map((r) => [
       r.documentNumber,
       csvMoney(r.nominalAmountCents),
       formatDate(r.dueDate),
+      formatDate(r.compensationDate ?? r.dueDate),
       r.days,
       formatNumber(r.rate, 2),
       csvMoney(r.discountAmountCents),
@@ -57,6 +58,7 @@ export function exportAllDataCsv(
       'Tipo',
       'Status',
       'Taxa mensal',
+      'Compensação (D+x)',
       'Valor nominal',
       'Desconto',
       'Tarifas',
@@ -74,6 +76,7 @@ export function exportAllDataCsv(
       operationTypeLabel(op.operationType),
       operationStatusLabel(op.status),
       formatNumber(op.monthlyRate, 2),
+      String(op.compensationDays ?? 0),
       csvMoney(op.nominalAmountCents),
       csvMoney(op.discountAmountCents),
       csvMoney(op.totalFeesCents),
@@ -88,12 +91,13 @@ export function exportAllDataCsv(
 
   const numberByOperation = new Map(operations.map((op) => [op.id, op.operationNumber]));
   const receivableRows: (string | number)[][] = [
-    ['Operação', 'Documento', 'Valor nominal', 'Vencimento', 'Dias', 'Taxa', 'Desconto', 'Despesas', 'Valor líquido'],
+    ['Operação', 'Documento', 'Valor nominal', 'Vencimento', 'Compensação', 'Dias', 'Taxa', 'Desconto', 'Despesas', 'Valor líquido'],
     ...receivables.map((r) => [
       numberByOperation.get(r.operationId) ?? '',
       r.documentNumber,
       csvMoney(r.nominalAmountCents),
       formatDate(r.dueDate),
+      formatDate(r.compensationDate ?? r.dueDate),
       r.days,
       formatNumber(r.rate, 2),
       csvMoney(r.discountAmountCents),

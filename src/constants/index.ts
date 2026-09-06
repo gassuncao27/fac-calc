@@ -25,6 +25,7 @@ export const DEFAULT_SETTINGS: Settings = {
   // Pré-preenchido; confira as alíquotas vigentes em Configurações.
   iofDailyRate: 0.0082,
   iofAdditionalRate: 0.95,
+  defaultCompensationDays: 2,
   defaultRate: 3,
   defaultDayBase: 30,
   defaultFixedFeeCents: 0,

@@ -231,4 +231,99 @@ describe('calculateOperation', () => {
     expect(result.iofPrincipalCents).toBeGreaterThan(0);
     expect(result.netAmountCents).toBe(3_173_250 - result.iofAmountCents);
   });
+
+  // ---- Compensação D+x ----
+
+  it('D+2 alonga o prazo, aumenta o deságio e reduz o líquido', () => {
+    const titulo = [
+      { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-28' },
+    ];
+    const semComp = calculateOperation(baseInput({ receivables: titulo }));
+    const comComp = calculateOperation(baseInput({ receivables: titulo, compensationDays: 2 }));
+
+    // 45 dias até o vencimento; 47 até compensar
+    expect(semComp.receivables[0].days).toBe(45);
+    expect(comComp.receivables[0].dueDays).toBe(45);
+    expect(comComp.receivables[0].days).toBe(47);
+    expect(comComp.receivables[0].compensationDate).toBe('2026-09-30');
+
+    // 10.000 × 3% × 47/30 = 470,00 (contra 450,00 sem compensação)
+    expect(comComp.discountAmountCents).toBe(47_000);
+    expect(comComp.netAmountCents).toBe(953_000);
+    expect(comComp.netAmountCents).toBeLessThan(semComp.netAmountCents);
+  });
+
+  it('D+0 mantém exatamente o comportamento anterior', () => {
+    const titulo = [
+      { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-28' },
+    ];
+    const semCampo = calculateOperation(baseInput({ receivables: titulo }));
+    const comZero = calculateOperation(baseInput({ receivables: titulo, compensationDays: 0 }));
+
+    expect(comZero.netAmountCents).toBe(semCampo.netAmountCents);
+    expect(comZero.receivables[0].compensationDate).toBe('2026-09-28');
+    expect(comZero.receivables[0].days).toBe(comZero.receivables[0].dueDays);
+  });
+
+  it('a taxa efetiva considera a data de compensação, não a de vencimento', () => {
+    const result = calculateOperation(
+      baseInput({
+        compensationDays: 2,
+        receivables: [
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-28' },
+        ],
+      }),
+    );
+    // Sai 9.530 hoje, entra 10.000 em 47 dias (não em 45)
+    const esperado = (Math.pow(1_000_000 / 953_000, 30 / 47) - 1) * 100;
+    expect(result.effectiveMonthlyRate!).toBeCloseTo(esperado, 6);
+  });
+
+  it('prazo médio pondera pelos dias até a compensação', () => {
+    const result = calculateOperation(
+      baseInput({
+        monthlyRate: 2.5,
+        compensationDays: 2,
+        receivables: [
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-15' }, // 32 → 34
+          { id: '2', documentNumber: '002', nominalAmountCents: 1_500_000, dueDate: '2026-09-30' }, // 47 → 49
+        ],
+      }),
+    );
+    expect(result.receivables.map((r) => r.days)).toEqual([34, 49]);
+    // (10.000×34 + 15.000×49) / 25.000 = 43,0
+    expect(result.averageTermDays).toBeCloseTo(43, 6);
+  });
+
+  it('a compensação atravessa a virada de mês corretamente', () => {
+    const result = calculateOperation(
+      baseInput({
+        operationDate: '2026-08-26',
+        compensationDays: 3,
+        receivables: [
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-30' },
+        ],
+      }),
+    );
+    expect(result.receivables[0].compensationDate).toBe('2026-10-03');
+  });
+
+  it('valores negativos ou fracionários de D+x são normalizados', () => {
+    const titulo = [
+      { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-28' },
+    ];
+    expect(calculateOperation(baseInput({ receivables: titulo, compensationDays: -5 })).receivables[0].days).toBe(45);
+    expect(calculateOperation(baseInput({ receivables: titulo, compensationDays: 2.9 })).receivables[0].days).toBe(47);
+  });
+
+  it('IOF usa o prazo até a compensação', () => {
+    const titulo = [
+      { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-28' },
+    ];
+    const iof = { iofEnabled: true, iofDailyRate: 0.0082, iofAdditionalRate: 0.95 };
+    const semComp = calculateOperation(baseInput({ receivables: titulo, ...iof }));
+    const comComp = calculateOperation(baseInput({ receivables: titulo, ...iof, compensationDays: 2 }));
+    // Mais dias de prazo → mais IOF por prazo
+    expect(comComp.iofPrincipalCents).toBeGreaterThan(semComp.iofPrincipalCents);
+  });
 });

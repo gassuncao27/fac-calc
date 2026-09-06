@@ -51,6 +51,8 @@ await page.selectOption('select[aria-label="Cliente"]', { label: 'Empresa Teste 
 // data da operação fixa para valores previsíveis
 await page.fill('input[type="date"] >> nth=0', '2026-08-14');
 
+// Compensação vem D+2 por padrão; zera para checar os valores de referência
+await page.fill('input[aria-label="Compensação em dias após o vencimento"]', '0');
 await page.click('button:has-text("Adicionar título")');
 await page.fill('[data-row="0"][data-col="value"]', '10000');
 await page.fill('[data-row="0"][data-col="due"]', '2026-09-28'); // 45 dias
@@ -66,6 +68,17 @@ check('Resumo em tempo real: valor líquido R$ 24.100,00', true);
 const summaryText = await page.textContent('main aside');
 check('Resumo exibe taxa efetiva mensal', /Taxa efetiva/.test(summaryText ?? ''));
 await page.screenshot({ path: `${shotsDir}/03-nova-operacao.png` });
+
+// 3a. Compensação D+x: alonga o prazo e reduz o líquido
+await page.fill('input[aria-label="Compensação em dias após o vencimento"]', '2');
+await page.waitForTimeout(300);
+const comCompensacao = await page.textContent('main aside');
+// 10.000×3%×47/30 + 15.000×3%×32/30 = 470 + 480 = 950 → líquido 24.050
+check('Compensação D+2: líquido recalculado', /R\$\s*24\.050,00/.test(comCompensacao ?? ''));
+check('Compensação D+2: exibida no resumo', /D \+ 2/.test(comCompensacao ?? ''));
+await page.fill('input[aria-label="Compensação em dias após o vencimento"]', '0');
+await page.waitForSelector('text=R$ 24.100,00');
+check('Compensação D+0: restaura o líquido original', true);
 
 // 3b. IOF: liga o imposto e confere que o líquido cai
 const liquidoSemIof = await page.textContent('main aside');
@@ -176,6 +189,10 @@ check('App reaberto offline: operações preservadas', opCount > 0);
 // 12. Status do armazenamento visível na tela de Backup
 await reopened.click('nav a[href$="/backup"] >> nth=0');
 await reopened.waitForSelector('text=Exportar backup');
+// O status do armazenamento é lido de forma assíncrona: espera o card aparecer
+await reopened.waitForSelector('text=/Dados protegidos neste aparelho|sem prote\u00e7\u00e3o contra limpeza/', {
+  timeout: 15000,
+});
 const storageCard = await reopened.textContent('main');
 check(
   'Tela de Backup informa o status do armazenamento',

@@ -10,7 +10,7 @@ import type { CalculationMethod, Operation, OperationStatus, OperationType, Sett
 import { DAY_BASES, OPERATION_TYPES } from '../constants';
 import { DISCOUNT_METHODS } from '../domain/calculations/methods';
 import { PageHeader } from '../components/ui/PageHeader';
-import { Field, Select, Textarea } from '../components/ui/Field';
+import { Field, Select, TextInput, Textarea } from '../components/ui/Field';
 import { Button } from '../components/ui/Button';
 import { useToast } from '../components/ui/Toast';
 import { ClientSelector } from '../components/ClientSelector';
@@ -32,6 +32,7 @@ interface FormState {
   fixedFeeCents: number | null;
   percentageFee: number | null;
   otherExpensesCents: number | null;
+  compensationDays: number;
   iofEnabled: boolean;
   notes: string;
   receivables: ReceivableDraft[];
@@ -49,6 +50,7 @@ function emptyForm(settings: Settings): FormState {
     fixedFeeCents: settings.defaultFixedFeeCents || null,
     percentageFee: settings.defaultPercentageFee || null,
     otherExpensesCents: null,
+    compensationDays: settings.defaultCompensationDays,
     // Factoring paga IOF na maioria das operações: já vem marcado.
     iofEnabled: settings.isFactoring,
     notes: '',
@@ -86,6 +88,7 @@ export function OperationFormPage() {
           fixedFeeCents: operation.fixedFeeCents || null,
           percentageFee: operation.percentageFee || null,
           otherExpensesCents: operation.otherExpensesCents || null,
+          compensationDays: operation.compensationDays ?? 0,
           iofEnabled: operation.iofEnabled ?? false,
           notes: operation.notes ?? '',
           receivables: receivables.map((r) => ({
@@ -116,6 +119,7 @@ export function OperationFormPage() {
       fixedFeeCents: form.fixedFeeCents ?? 0,
       percentageFee: form.percentageFee ?? 0,
       otherExpensesCents: form.otherExpensesCents ?? 0,
+      compensationDays: form.compensationDays,
       iofEnabled: form.iofEnabled,
       iofDailyRate: settings?.iofDailyRate ?? 0,
       iofAdditionalRate: settings?.iofAdditionalRate ?? 0,
@@ -135,6 +139,7 @@ export function OperationFormPage() {
       fixedFeeCents: f.fixedFeeCents ?? 0,
       percentageFee: f.percentageFee ?? 0,
       otherExpensesCents: f.otherExpensesCents ?? 0,
+      compensationDays: f.compensationDays,
       iofEnabled: f.iofEnabled,
       iofDailyRate: settings?.iofDailyRate ?? 0,
       iofAdditionalRate: settings?.iofAdditionalRate ?? 0,
@@ -190,6 +195,7 @@ export function OperationFormPage() {
         fixedFeeCents: form.fixedFeeCents ?? 0,
         percentageFee: form.percentageFee ?? 0,
         otherExpensesCents: form.otherExpensesCents ?? 0,
+        compensationDays: form.compensationDays,
         iofEnabled: form.iofEnabled,
         iofDailyRate: settings.iofDailyRate,
         iofAdditionalRate: settings.iofAdditionalRate,
@@ -216,6 +222,7 @@ export function OperationFormPage() {
           documentNumber: r.documentNumber,
           nominalAmountCents: r.nominalAmountCents,
           dueDate: r.dueDate,
+          compensationDate: r.compensationDate,
           days: r.days,
           rate: r.rate,
           discountAmountCents: r.discountAmountCents,
@@ -310,6 +317,25 @@ export function OperationFormPage() {
                   ))}
                 </Select>
               </Field>
+              <Field
+                label="Compensação D + x"
+                hint="Dias após o vencimento até o dinheiro entrar."
+              >
+                <TextInput
+                  type="number"
+                  min={0}
+                  max={180}
+                  step={1}
+                  inputMode="numeric"
+                  value={String(form.compensationDays)}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    patch({ compensationDays: Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0 });
+                  }}
+                  className="tabular text-right"
+                  aria-label="Compensação em dias após o vencimento"
+                />
+              </Field>
               <Field label="Tarifa fixa">
                 <CurrencyInput
                   valueCents={form.fixedFeeCents}
@@ -374,6 +400,7 @@ export function OperationFormPage() {
             result={result}
             monthlyRate={form.monthlyRate ?? 0}
             decimalPlaces={settings.decimalPlaces}
+            compensationDays={form.compensationDays}
           />
           <div className="mt-4 flex flex-col gap-3">
             <Button size="lg" onClick={handleSave} disabled={saving}>

@@ -108,12 +108,12 @@ export function DashboardPage() {
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-slate-900">{clientName(op.clientId)}</p>
-                    <p className="mt-0.5 text-[13px] text-slate-400">
+                    <p className="mt-0.5 truncate text-[13px] text-slate-400">
                       {op.operationNumber} · {formatDate(op.operationDate)}
                     </p>
                   </div>
                   <StatusBadge status={op.status} />
-                  <div className="tabular text-right">
+                  <div className="tabular shrink-0 text-right">
                     <p className="font-semibold text-slate-900">{formatCents(op.netAmountCents)}</p>
                     <p className="text-[13px] text-slate-400">{formatCents(op.nominalAmountCents)} bruto</p>
                   </div>

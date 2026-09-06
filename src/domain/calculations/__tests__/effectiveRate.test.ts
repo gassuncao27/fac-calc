@@ -19,9 +19,9 @@ describe('taxa efetiva da operação (XIRR mensal)', () => {
 
   it('zera o VPL dos fluxos na taxa encontrada (múltiplos títulos)', () => {
     const cashflows = buildOperationCashflows('2026-08-14', 3_173_250, [
-      { dueDate: '2026-09-15', nominalAmountCents: 1_000_000 },
-      { dueDate: '2026-09-30', nominalAmountCents: 1_500_000 },
-      { dueDate: '2026-10-15', nominalAmountCents: 800_000 },
+      { settlementDate: '2026-09-15', nominalAmountCents: 1_000_000 },
+      { settlementDate: '2026-09-30', nominalAmountCents: 1_500_000 },
+      { settlementDate: '2026-10-15', nominalAmountCents: 800_000 },
     ]);
     const rate = effectiveMonthlyRate(cashflows);
     expect(rate).not.toBeNull();
