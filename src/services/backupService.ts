@@ -42,6 +42,7 @@ const operationSchema = z.object({
   percentageFee: z.number(),
   otherExpensesCents: z.number(),
   compensationDays: z.number().optional().default(0),
+  compensationMode: z.enum(['calendar', 'business']).optional().default('calendar'),
   // Opcionais: backups gerados antes do IOF continuam sendo aceitos
   iofEnabled: z.boolean().optional().default(false),
   iofDailyRate: z.number().optional().default(0),
@@ -88,6 +89,7 @@ const settingsSchema = z
     iofDailyRate: z.number().optional().default(0.0082),
     iofAdditionalRate: z.number().optional().default(0.95),
     defaultCompensationDays: z.number().optional().default(2),
+    defaultCompensationMode: z.enum(['calendar', 'business']).optional().default('business'),
     defaultRate: z.number(),
     defaultDayBase: z.number(),
     defaultFixedFeeCents: z.number(),

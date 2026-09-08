@@ -197,6 +197,17 @@ export function SettingsPage() {
                 ))}
               </Select>
             </Field>
+            <Field label="Critério da compensação" hint="Dias úteis pulam sábados e domingos.">
+              <Select
+                value={settings.defaultCompensationMode}
+                onChange={(e) =>
+                  patch({ defaultCompensationMode: e.target.value as Settings['defaultCompensationMode'] })
+                }
+              >
+                <option value="business">Dias úteis</option>
+                <option value="calendar">Dias corridos</option>
+              </Select>
+            </Field>
             <Field label="Compensação padrão (D + x)" hint="Dias após o vencimento até o dinheiro entrar.">
               <TextInput
                 type="number"

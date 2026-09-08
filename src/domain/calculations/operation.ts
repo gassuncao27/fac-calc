@@ -1,5 +1,5 @@
-import type { CalculationMethod } from '../../types/models';
-import { addDaysISO, countDays } from '../dayCount';
+import type { CalculationMethod, DayCountMode } from '../../types/models';
+import { addCompensationDays, countDays } from '../dayCount';
 import { roundCents } from '../money';
 import { averageTermDays } from './averageTerm';
 import { buildOperationCashflows } from './cashflows';
@@ -29,6 +29,11 @@ export interface OperationCalcInput {
    * ficar disponível. Alonga o prazo, aumenta o deságio e reduz o líquido.
    */
   compensationDays?: number;
+  /**
+   * Como contar os dias da compensação:
+   * 'calendar' = dias corridos · 'business' = dias úteis (pula fins de semana)
+   */
+  compensationMode?: DayCountMode;
   /** IOF incide nesta operação? (padrão: não) */
   iofEnabled?: boolean;
   /** Alíquota diária do IOF em % (0.0082 = 0,0082% a.d.) */
@@ -83,7 +88,11 @@ export function calculateOperation(input: OperationCalcInput): OperationCalcResu
   const compensationDays = Math.max(0, Math.trunc(input.compensationDays ?? 0));
 
   const receivables: ReceivableCalcResult[] = input.receivables.map((r) => {
-    const compensationDate = addDaysISO(r.dueDate, compensationDays);
+    const compensationDate = addCompensationDays(
+      r.dueDate,
+      compensationDays,
+      input.compensationMode ?? 'calendar',
+    );
     const dueDays = Math.max(0, countDays(input.operationDate, r.dueDate));
     // O prazo que remunera a operação vai até a compensação, não até o vencimento.
     const days = Math.max(0, countDays(input.operationDate, compensationDate));

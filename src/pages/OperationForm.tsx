@@ -6,7 +6,7 @@ import { calculateOperation } from '../domain/calculations/operation';
 import { getOperationWithReceivables, saveOperation, type OperationDraft, type ReceivableDraft } from '../services/operationService';
 import { getSettings } from '../services/settingsService';
 import { db } from '../db/database';
-import type { CalculationMethod, Operation, OperationStatus, OperationType, Settings } from '../types/models';
+import type { CalculationMethod, DayCountMode, Operation, OperationStatus, OperationType, Settings } from '../types/models';
 import { DAY_BASES, OPERATION_TYPES } from '../constants';
 import { DISCOUNT_METHODS } from '../domain/calculations/methods';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -33,6 +33,7 @@ interface FormState {
   percentageFee: number | null;
   otherExpensesCents: number | null;
   compensationDays: number;
+  compensationMode: DayCountMode;
   iofEnabled: boolean;
   notes: string;
   receivables: ReceivableDraft[];
@@ -51,6 +52,7 @@ function emptyForm(settings: Settings): FormState {
     percentageFee: settings.defaultPercentageFee || null,
     otherExpensesCents: null,
     compensationDays: settings.defaultCompensationDays,
+    compensationMode: settings.defaultCompensationMode,
     // Factoring paga IOF na maioria das operações: já vem marcado.
     iofEnabled: settings.isFactoring,
     notes: '',
@@ -89,6 +91,7 @@ export function OperationFormPage() {
           percentageFee: operation.percentageFee || null,
           otherExpensesCents: operation.otherExpensesCents || null,
           compensationDays: operation.compensationDays ?? 0,
+          compensationMode: operation.compensationMode ?? 'calendar',
           iofEnabled: operation.iofEnabled ?? false,
           notes: operation.notes ?? '',
           receivables: receivables.map((r) => ({
@@ -120,6 +123,7 @@ export function OperationFormPage() {
       percentageFee: form.percentageFee ?? 0,
       otherExpensesCents: form.otherExpensesCents ?? 0,
       compensationDays: form.compensationDays,
+      compensationMode: form.compensationMode,
       iofEnabled: form.iofEnabled,
       iofDailyRate: settings?.iofDailyRate ?? 0,
       iofAdditionalRate: settings?.iofAdditionalRate ?? 0,
@@ -140,6 +144,7 @@ export function OperationFormPage() {
       percentageFee: f.percentageFee ?? 0,
       otherExpensesCents: f.otherExpensesCents ?? 0,
       compensationDays: f.compensationDays,
+      compensationMode: f.compensationMode,
       iofEnabled: f.iofEnabled,
       iofDailyRate: settings?.iofDailyRate ?? 0,
       iofAdditionalRate: settings?.iofAdditionalRate ?? 0,
@@ -196,6 +201,7 @@ export function OperationFormPage() {
         percentageFee: form.percentageFee ?? 0,
         otherExpensesCents: form.otherExpensesCents ?? 0,
         compensationDays: form.compensationDays,
+        compensationMode: form.compensationMode,
         iofEnabled: form.iofEnabled,
         iofDailyRate: settings.iofDailyRate,
         iofAdditionalRate: settings.iofAdditionalRate,
@@ -319,7 +325,11 @@ export function OperationFormPage() {
               </Field>
               <Field
                 label="Compensação D + x"
-                hint="Dias após o vencimento até o dinheiro entrar."
+                hint={
+                  form.compensationMode === 'business'
+                    ? 'Dias úteis após o vencimento (pula fins de semana).'
+                    : 'Dias corridos após o vencimento.'
+                }
               >
                 <TextInput
                   type="number"
@@ -401,6 +411,7 @@ export function OperationFormPage() {
             monthlyRate={form.monthlyRate ?? 0}
             decimalPlaces={settings.decimalPlaces}
             compensationDays={form.compensationDays}
+            compensationMode={form.compensationMode}
           />
           <div className="mt-4 flex flex-col gap-3">
             <Button size="lg" onClick={handleSave} disabled={saving}>

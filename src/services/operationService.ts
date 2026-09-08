@@ -2,6 +2,7 @@ import { calculateOperation } from '../domain/calculations/operation';
 import { db } from '../db/database';
 import type {
   CalculationMethod,
+  DayCountMode,
   Operation,
   OperationStatus,
   OperationType,
@@ -32,6 +33,7 @@ export interface OperationDraft {
   percentageFee: number;
   otherExpensesCents: number;
   compensationDays: number;
+  compensationMode: DayCountMode;
   iofEnabled: boolean;
   iofDailyRate: number;
   iofAdditionalRate: number;
@@ -54,6 +56,7 @@ export async function saveOperation(draft: OperationDraft, existingId?: string):
     percentageFee: draft.percentageFee,
     otherExpensesCents: draft.otherExpensesCents,
     compensationDays: draft.compensationDays,
+    compensationMode: draft.compensationMode,
     iofEnabled: draft.iofEnabled,
     iofDailyRate: draft.iofDailyRate,
     iofAdditionalRate: draft.iofAdditionalRate,
@@ -95,6 +98,7 @@ export async function saveOperation(draft: OperationDraft, existingId?: string):
       percentageFee: draft.percentageFee,
       otherExpensesCents: draft.otherExpensesCents,
       compensationDays: draft.compensationDays,
+      compensationMode: draft.compensationMode,
       iofEnabled: draft.iofEnabled,
       iofDailyRate: draft.iofDailyRate,
       iofAdditionalRate: draft.iofAdditionalRate,
@@ -166,6 +170,7 @@ export async function duplicateOperation(id: string): Promise<Operation | null> 
     percentageFee: operation.percentageFee,
     otherExpensesCents: operation.otherExpensesCents,
     compensationDays: operation.compensationDays ?? 0,
+    compensationMode: operation.compensationMode ?? 'calendar',
     iofEnabled: operation.iofEnabled ?? false,
     iofDailyRate: operation.iofDailyRate ?? 0,
     iofAdditionalRate: operation.iofAdditionalRate ?? 0,

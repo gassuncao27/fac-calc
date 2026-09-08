@@ -198,7 +198,13 @@ export function OperationDetailPage() {
               <InfoItem label="Base de cálculo" value={`${operation.dayBase} dias`} />
               <InfoItem
                 label="Compensação"
-                value={operation.compensationDays ? `D + ${operation.compensationDays}` : 'No vencimento'}
+                value={
+                  operation.compensationDays
+                    ? `D + ${operation.compensationDays} ${
+                        operation.compensationMode === 'business' ? 'dias úteis' : 'dias corridos'
+                      }`
+                    : 'No vencimento'
+                }
               />
               <InfoItem label="Criada em" value={formatDate(operation.createdAt.slice(0, 10))} />
               <InfoItem

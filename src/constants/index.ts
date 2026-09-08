@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS: Settings = {
   iofDailyRate: 0.0082,
   iofAdditionalRate: 0.95,
   defaultCompensationDays: 2,
+  defaultCompensationMode: 'business',
   defaultRate: 3,
   defaultDayBase: 30,
   defaultFixedFeeCents: 0,

@@ -6,6 +6,7 @@ interface OperationSummaryProps {
   monthlyRate: number;
   decimalPlaces?: number;
   compensationDays?: number;
+  compensationMode?: 'calendar' | 'business';
 }
 
 function Row({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
@@ -25,6 +26,7 @@ export function OperationSummary({
   monthlyRate,
   decimalPlaces = 2,
   compensationDays = 0,
+  compensationMode = 'calendar',
 }: OperationSummaryProps) {
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-6">
@@ -32,7 +34,13 @@ export function OperationSummary({
 
       <Row label="Valor nominal" value={formatCents(result.nominalAmountCents)} />
       <Row label="Prazo médio" value={formatDays(result.averageTermDays)} />
-      {compensationDays > 0 && <Row label="Compensação" value={`D + ${compensationDays}`} muted />}
+      {compensationDays > 0 && (
+        <Row
+          label="Compensação"
+          value={`D + ${compensationDays} ${compensationMode === 'business' ? 'úteis' : 'corridos'}`}
+          muted
+        />
+      )}
       <Row label="Taxa comercial" value={`${formatPercent(monthlyRate, decimalPlaces)} a.m.`} />
       <Row label="Deságio" value={`− ${formatCents(result.discountAmountCents)}`} muted />
       <Row label="Tarifas" value={`− ${formatCents(result.feesAmountCents)}`} muted />

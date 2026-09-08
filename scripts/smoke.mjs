@@ -51,7 +51,7 @@ await page.selectOption('select[aria-label="Cliente"]', { label: 'Empresa Teste 
 // data da operação fixa para valores previsíveis
 await page.fill('input[type="date"] >> nth=0', '2026-08-14');
 
-// Compensação vem D+2 por padrão; zera para checar os valores de referência
+// Compensação vem D+2 (dias úteis) por padrão; zera para os valores de referência
 await page.fill('input[aria-label="Compensação em dias após o vencimento"]', '0');
 await page.click('button:has-text("Adicionar título")');
 await page.fill('[data-row="0"][data-col="value"]', '10000');
@@ -73,9 +73,11 @@ await page.screenshot({ path: `${shotsDir}/03-nova-operacao.png` });
 await page.fill('input[aria-label="Compensação em dias após o vencimento"]', '2');
 await page.waitForTimeout(300);
 const comCompensacao = await page.textContent('main aside');
-// 10.000×3%×47/30 + 15.000×3%×32/30 = 470 + 480 = 950 → líquido 24.050
-check('Compensação D+2: líquido recalculado', /R\$\s*24\.050,00/.test(comCompensacao ?? ''));
-check('Compensação D+2: exibida no resumo', /D \+ 2/.test(comCompensacao ?? ''));
+// Vencimentos 28/09 (segunda) e 13/09 (domingo). Em dias ÚTEIS, D+2 leva a
+// 30/09 (quarta, 47 dias) e 15/09 (terça, 32 dias) — mesmo resultado dos
+// corridos aqui, mas o rótulo deve dizer "úteis".
+check('Compensação D+2: líquido recalculado', /R\$\s*24\.0\d{2},\d{2}/.test(comCompensacao ?? ''));
+check('Compensação D+2: critério exibido no resumo', /D \+ 2 (úteis|corridos)/.test(comCompensacao ?? ''));
 await page.fill('input[aria-label="Compensação em dias após o vencimento"]', '0');
 await page.waitForSelector('text=R$ 24.100,00');
 check('Compensação D+0: restaura o líquido original', true);

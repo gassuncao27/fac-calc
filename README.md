@@ -173,7 +173,7 @@ A partir daí funciona em modo avião, em tela cheia, sem barra do navegador.
 src/
   domain/               ← motor financeiro puro (sem UI, sem banco)
     money.ts            ← valores em centavos (inteiros)
-    dayCount.ts         ← dias corridos (preparado para dias úteis na V2)
+    dayCount.ts         ← dias corridos e úteis; datas seguras contra entrada incompleta
     calculations/
       discount.ts       ← desconto simples por taxa mensal
       averageTerm.ts    ← prazo médio ponderado
@@ -182,7 +182,7 @@ src/
       iof.ts            ← IOF/Crédito (diário por título + adicional)
       methods.ts        ← registro de métodos de cálculo (extensível)
       operation.ts      ← calculateOperation() — única porta de entrada da UI
-      __tests__/        ← 38 testes unitários
+      __tests__/        ← 57 testes unitários
   db/                   ← Dexie/IndexedDB (schema + dados de demonstração)
   services/             ← operações, clientes, configurações, PDF, CSV, backup
   components/           ← UI reutilizável (CurrencyInput, PercentInput, ReceivableTable,
@@ -208,7 +208,9 @@ scripts/
 - **CSV para Excel BR** — separador `;`, BOM UTF-8 e vírgula decimal.
 - **Exclusão de cliente preserva operações** (apenas desvincula).
 - **PIN local opcional** (4–6 dígitos, hash SHA-256) em Configurações — proteção de conveniência, sem login online.
-- **Compensação D+x** — dias somados ao vencimento de cada título até o dinheiro ficar disponível (cheque que compensa em D+2, por exemplo). Alonga o prazo, aumenta o deságio e reduz o líquido. Vale para a operação inteira, com padrão configurável (vem D+2) e ajuste caso a caso em Nova operação. O prazo médio, o IOF e a **taxa efetiva** passam a usar a data de compensação, não a de vencimento — é quando o dinheiro de fato entra. Operações salvas antes deste campo continuam com D+0, sem alteração de valores.
+- **Compensação D+x** — dias somados ao vencimento de cada título até o dinheiro ficar disponível (cheque que compensa em D+2, por exemplo). Alonga o prazo, aumenta o deságio e reduz o líquido. Vale para a operação inteira, com padrão configurável (vem **D+2 em dias úteis**) e ajuste caso a caso em Nova operação. O prazo médio, o IOF e a **taxa efetiva** passam a usar a data de compensação, não a de vencimento — é quando o dinheiro de fato entra.
+- **Dias úteis na compensação** — em `business`, D+x pula sábados e domingos (sexta + D+2 = terça, não domingo); se o próprio vencimento cair no fim de semana, a contagem parte do próximo dia útil. O critério fica gravado **em cada operação** (`compensationMode`), então mudar o padrão em Configurações não altera o valor de operações já fechadas. Operações salvas antes deste campo mantêm `calendar`/D+0, sem alteração alguma.
+- **Feriados ainda não entram na conta.** Só fins de semana. Um D+2 que caia no Carnaval, na Sexta-Feira Santa ou no Corpus Christi vai errar — ver "Preparado para a V2".
 - **IOF automático** — calculado pelo motor, não digitado à mão. Estrutura do Decreto 6.306/2007: alíquota **diária** aplicada ao prazo de cada título (limitada a 365 dias) mais a alíquota **adicional** fixa, ambas incidindo sobre o **valor líquido entregue ao cedente**. A base é apurada *antes* do próprio IOF, para não criar circularidade. O principal é apurado **por título** (cada um tem prazo próprio), rateando a base pelo líquido que cada título gera.
 - **Alíquotas de IOF são configuráveis, nunca constantes no código** — mudam por decreto. Ficam em Configurações, pré-preenchidas com 0,0082% a.d. + 0,95% adicional; **confira as vigentes antes de usar**. As alíquotas usadas ficam gravadas em cada operação, então recalcular uma operação antiga não altera o que foi fechado.
 - **"Empresa é factoring"** (Configurações) faz novas operações já virem com o IOF marcado; o usuário pode desmarcar caso a caso.
@@ -218,7 +220,7 @@ scripts/
 ## Preparado para a V2
 
 - Novos métodos de cálculo (registro em `methods.ts` + união em `CalculationMethod`).
-- Dias úteis e calendário local de feriados (`dayCount.ts` já recebe o modo; V1 usa dias corridos).
+- **Calendário de feriados local e editável** — a compensação já pula fins de semana (`addBusinessDaysISO`), mas não feriados. Como o app precisa funcionar offline, não dá para consultar API: seria uma tela nova com os feriados nacionais pré-carregados, editável e incluída no backup. O ponto de mudança é único: `addCompensationDays` em `dayCount.ts`.
 - Logo e dados completos da empresa no PDF (Configurações já persistem nome/CNPJ).
 - Taxa por título editável (campo `rate` já existe no schema).
 - Despesas por título na grade (campo `expensesCents` já existe e é calculado).

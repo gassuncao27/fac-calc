@@ -61,7 +61,14 @@ export function generateOperationPdf(
     ['Status', operationStatusLabel(operation.status)],
     ['Taxa comercial', `${formatPercent(operation.monthlyRate)} a.m.`],
     ['Base de dias', String(operation.dayBase)],
-    ['Compensação', operation.compensationDays ? `D + ${operation.compensationDays}` : 'No vencimento'],
+    [
+      'Compensação',
+      operation.compensationDays
+        ? `D + ${operation.compensationDays} ${
+            operation.compensationMode === 'business' ? 'dias úteis' : 'dias corridos'
+          }`
+        : 'No vencimento',
+    ],
     [
       'IOF',
       operation.iofEnabled

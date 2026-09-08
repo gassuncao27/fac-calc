@@ -35,6 +35,8 @@ export interface Operation {
   otherExpensesCents: number;
   /** Compensação D+x: dias somados ao vencimento até o dinheiro ficar disponível */
   compensationDays: number;
+  /** Critério usado nessa contagem — fica gravado para a operação não mudar de valor */
+  compensationMode: DayCountMode;
   /** IOF incidiu nesta operação? */
   iofEnabled: boolean;
   /** Alíquotas vigentes no momento do cálculo (ficam gravadas na operação) */
@@ -85,6 +87,8 @@ export interface Settings {
   iofAdditionalRate: number;
   /** Compensação padrão de novas operações (D+x) */
   defaultCompensationDays: number;
+  /** Critério padrão da compensação: dias corridos ou dias úteis */
+  defaultCompensationMode: DayCountMode;
   defaultRate: number;
   defaultDayBase: number;
   defaultFixedFeeCents: number;

@@ -1,4 +1,4 @@
-import { addDays, differenceInCalendarDays, format, isValid, parseISO } from 'date-fns';
+import { addBusinessDays, addDays, differenceInCalendarDays, format, isValid, parseISO } from 'date-fns';
 import type { DayCountMode } from '../types/models';
 
 /**
@@ -15,6 +15,27 @@ export function isValidISODate(iso: string): boolean {
 export function addDaysISO(iso: string, days: number): string {
   if (!isValidISODate(iso) || !Number.isFinite(days) || days === 0) return iso;
   return format(addDays(parseISO(iso), days), 'yyyy-MM-dd');
+}
+
+/**
+ * Soma dias ÚTEIS a uma data ISO, pulando sábados e domingos.
+ * Se a própria data já cair no fim de semana, a contagem parte do
+ * próximo dia útil. Data inválida volta como veio, sem lançar.
+ *
+ * ATENÇÃO: só considera fins de semana. Feriados (Carnaval, Corpus Christi,
+ * feriados bancários) ainda não entram — ver "Preparado para a V2" no README.
+ */
+export function addBusinessDaysISO(iso: string, days: number): string {
+  if (!isValidISODate(iso) || !Number.isFinite(days) || days === 0) return iso;
+  return format(addBusinessDays(parseISO(iso), days), 'yyyy-MM-dd');
+}
+
+/**
+ * Ponto único de aplicação da compensação D+x: escolhe entre dias corridos
+ * e dias úteis conforme o critério da operação.
+ */
+export function addCompensationDays(iso: string, days: number, mode: DayCountMode): string {
+  return mode === 'business' ? addBusinessDaysISO(iso, days) : addDaysISO(iso, days);
 }
 
 /**

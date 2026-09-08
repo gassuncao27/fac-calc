@@ -385,4 +385,65 @@ describe('calculateOperation', () => {
     expect(r.receivables[1].days).toBe(0);
     expect(Number.isFinite(r.netAmountCents)).toBe(true);
   });
+
+  // ---- Compensação em dias úteis ----
+
+  it('em dias úteis, vencimento na sexta com D+2 compensa na terça', () => {
+    const titulo = [
+      // 11/09/2026 é sexta-feira
+      { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-11' },
+    ];
+    const corridos = calculateOperation(
+      baseInput({ operationDate: '2026-09-08', compensationDays: 2, compensationMode: 'calendar', receivables: titulo }),
+    );
+    const uteis = calculateOperation(
+      baseInput({ operationDate: '2026-09-08', compensationDays: 2, compensationMode: 'business', receivables: titulo }),
+    );
+
+    expect(corridos.receivables[0].compensationDate).toBe('2026-09-13'); // domingo
+    expect(uteis.receivables[0].compensationDate).toBe('2026-09-15'); // terça
+    // Dois dias a mais de prazo → mais deságio, menos líquido
+    expect(uteis.receivables[0].days).toBe(corridos.receivables[0].days + 2);
+    expect(uteis.netAmountCents).toBeLessThan(corridos.netAmountCents);
+  });
+
+  it('em dias úteis, vencimento na quinta com D+2 compensa na segunda', () => {
+    const result = calculateOperation(
+      baseInput({
+        operationDate: '2026-09-08',
+        compensationDays: 2,
+        compensationMode: 'business',
+        receivables: [
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-10' },
+        ],
+      }),
+    );
+    expect(result.receivables[0].compensationDate).toBe('2026-09-14');
+  });
+
+  it('sem critério informado, mantém dias corridos (operações antigas não mudam)', () => {
+    const result = calculateOperation(
+      baseInput({
+        operationDate: '2026-09-08',
+        compensationDays: 2,
+        receivables: [
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-11' },
+        ],
+      }),
+    );
+    expect(result.receivables[0].compensationDate).toBe('2026-09-13');
+  });
+
+  it('dias úteis também não quebram com data inválida', () => {
+    const executar = () =>
+      calculateOperation(
+        baseInput({
+          compensationDays: 2,
+          compensationMode: 'business',
+          receivables: [{ id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '' }],
+        }),
+      );
+    expect(executar).not.toThrow();
+    expect(executar().receivables[0].days).toBe(0);
+  });
 });
