@@ -54,7 +54,11 @@ npm run preview:pages   # em um terminal (serve o build numa subpasta, como o Pa
 npm run smoke        # fluxo completo: cliente → operação → salvar → histórico
                      # → offline → PDF → backup → fechar/reabrir offline
 npm run responsive   # abre todas as páginas em 9 larguras (390px … 1920px) e
-                     # falha se algo transbordar ou gerar rolagem horizontal
+                     # falha se algo transbordar, se um campo vazar por cima
+                     # do vizinho, ou se surgir rolagem horizontal.
+                     # Roda também em WebKit (motor do Safari) nos tamanhos
+                     # de iPad — instale com:
+                     #   node node_modules/playwright-core/cli.js install webkit
 ```
 
 ## Como testar a PWA (Chrome desktop)
@@ -81,7 +85,9 @@ O projeto resolve isso de duas formas:
 - **Breakpoint `wide`** (em `tailwind.config.js`): significa "a coluna do formulário tem pelo menos ~880px". Como a largura útil cai quando o Resumo entra ao lado, ele é definido em duas faixas de viewport.
 - **Tabelas viram cartões** quando não há largura: a grade de títulos, o histórico e os títulos da tela de detalhe alternam entre tabela e lista de cartões via `useMediaQuery`, renderizando só uma das duas (nunca escondendo com CSS, o que duplicaria os campos).
 
-Rode `npm run responsive` após mexer em layout — ele falha se algum texto transbordar.
+Rode `npm run responsive` após mexer em layout. Além do Chromium, ele passa pelo **WebKit** (motor do Safari) nos tamanhos de iPad, porque o Safari dimensiona controles nativos de forma diferente — foi assim que um campo de data vazando sobre o vizinho passou despercebido antes.
+
+> **`input[type=date]` no iOS** usa o controle nativo do sistema, com largura intrínseca própria que ignora a do container — o campo invade o vizinho no iPad. A correção está em `index.css`: `appearance: none` + `min-width: 0` + `max-width: 100%`. O seletor de data continua abrindo normalmente ao toque.
 
 ## Compatibilidade de navegadores
 

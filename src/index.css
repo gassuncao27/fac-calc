@@ -57,6 +57,20 @@ input[type='number']::-webkit-inner-spin-button {
   margin: 0;
 }
 
+/*
+ * iOS renderiza input[type=date] com o controle nativo do sistema, que tem
+ * largura intrínseca própria e ignora a largura do container — o campo vaza
+ * por cima do vizinho no iPad. Neutralizar a aparência nativa faz o campo
+ * respeitar a caixa como um input comum; o seletor de data continua abrindo
+ * normalmente ao toque.
+ *
+ * min-width:0 é necessário para o campo poder encolher dentro de grid/flex,
+ * cujo padrão (min-width:auto) impede a redução abaixo do conteúdo.
+ */
 input[type='date'] {
   min-height: 2.75rem;
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
 }

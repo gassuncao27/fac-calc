@@ -30,7 +30,8 @@ export function HolidaysPage() {
   const { toast } = useToast();
   const anoAtual = Number(todayISO().slice(0, 4));
   const [ano, setAno] = useState(anoAtual);
-  const [novaData, setNovaData] = useState('');
+  // Pré-preenchido: no iOS um campo de data vazio fica sem indicação visual
+  const [novaData, setNovaData] = useState(todayISO);
   const [novoNome, setNovoNome] = useState('');
   const [aRemover, setARemover] = useState<Holiday | null>(null);
   const [confirmarLimpeza, setConfirmarLimpeza] = useState(false);
@@ -51,7 +52,7 @@ export function HolidaysPage() {
     try {
       await addHoliday(novaData, novoNome);
       toast('Feriado cadastrado.');
-      setNovaData('');
+      setNovaData(todayISO());
       setNovoNome('');
     } catch (error) {
       console.error(error);
@@ -112,7 +113,7 @@ export function HolidaysPage() {
           <h2 className="mb-4 text-[12px] font-semibold uppercase tracking-widest text-slate-400">
             Cadastrar feriado
           </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)_auto] sm:items-end">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_minmax(0,auto)] lg:items-end">
             <Field label="Data">
               <DateInput value={novaData} onChangeValue={setNovaData} aria-label="Data do feriado" />
             </Field>
@@ -127,7 +128,7 @@ export function HolidaysPage() {
                 }}
               />
             </Field>
-            <Button onClick={handleAdicionar} disabled={!podeAdicionar} className="sm:mb-0">
+            <Button onClick={handleAdicionar} disabled={!podeAdicionar} className="sm:col-span-2 lg:col-span-1">
               <Plus className="size-4" />
               Adicionar
             </Button>

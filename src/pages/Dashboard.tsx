@@ -78,7 +78,7 @@ export function DashboardPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <MetricCard label="Operações" value={String(stats.count)} />
         <MetricCard label="Volume nominal" value={formatCents(stats.nominal)} hint="Exclui canceladas" />
         <MetricCard label="Valor líquido" value={formatCents(stats.net)} hint="Exclui canceladas" />
