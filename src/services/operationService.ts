@@ -11,6 +11,7 @@ import type {
 import { generateId } from '../utils/id';
 import { nowISO } from '../utils/format';
 import { nextOperationNumber } from './settingsService';
+import { holidayDates } from './holidayService';
 
 export interface ReceivableDraft {
   id: string;
@@ -34,6 +35,8 @@ export interface OperationDraft {
   otherExpensesCents: number;
   compensationDays: number;
   compensationMode: DayCountMode;
+  /** Feriados vigentes no momento do cálculo */
+  holidays?: readonly string[];
   iofEnabled: boolean;
   iofDailyRate: number;
   iofAdditionalRate: number;
@@ -57,6 +60,7 @@ export async function saveOperation(draft: OperationDraft, existingId?: string):
     otherExpensesCents: draft.otherExpensesCents,
     compensationDays: draft.compensationDays,
     compensationMode: draft.compensationMode,
+    holidays: draft.holidays,
     iofEnabled: draft.iofEnabled,
     iofDailyRate: draft.iofDailyRate,
     iofAdditionalRate: draft.iofAdditionalRate,
@@ -171,6 +175,7 @@ export async function duplicateOperation(id: string): Promise<Operation | null> 
     otherExpensesCents: operation.otherExpensesCents,
     compensationDays: operation.compensationDays ?? 0,
     compensationMode: operation.compensationMode ?? 'calendar',
+    holidays: await holidayDates(),
     iofEnabled: operation.iofEnabled ?? false,
     iofDailyRate: operation.iofDailyRate ?? 0,
     iofAdditionalRate: operation.iofAdditionalRate ?? 0,

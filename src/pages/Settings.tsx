@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DatabaseBackup, FlaskConical } from 'lucide-react';
+import { CalendarDays, DatabaseBackup, FlaskConical } from 'lucide-react';
 import { getSettings, saveSettings } from '../services/settingsService';
 import { loadDemoData, clearAllData } from '../db/seed';
 import { DAY_BASES } from '../constants';
@@ -275,6 +275,22 @@ export function SettingsPage() {
             Salvar configurações
           </Button>
         </div>
+
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-6">
+          <h2 className="mb-1 text-[12px] font-semibold uppercase tracking-widest text-slate-400">
+            Feriados
+          </h2>
+          <p className="text-sm text-slate-500">
+            Usados quando a compensação é contada em dias úteis. Gere os nacionais e cadastre os
+            estaduais e municipais da sua praça.
+          </p>
+          <Link to="/feriados" className="mt-3 inline-block">
+            <Button variant="secondary">
+              <CalendarDays className="size-4" />
+              Gerenciar feriados
+            </Button>
+          </Link>
+        </section>
 
         <section className="rounded-2xl border border-slate-200/80 bg-white p-6">
           <h2 className="mb-1 text-[12px] font-semibold uppercase tracking-widest text-slate-400">Backup</h2>

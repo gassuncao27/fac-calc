@@ -102,7 +102,9 @@ Se um dia migrar para Tailwind v4, verifique antes em qual iPad o app será usad
 
 O **Service Worker** guarda os arquivos do app no aparelho no primeiro carregamento; o **IndexedDB** guarda clientes, operações e configurações localmente. O GitHub Pages entrega apenas os arquivos estáticos — **nenhum dado de cliente sai do aparelho**.
 
-Cada aparelho tem a sua própria base de dados: não há sincronização entre usuários. Para transferir, use **Exportar backup** em um e **Restaurar backup** no outro.
+Cada aparelho tem a sua própria base de dados: não há sincronização entre usuários. Para transferir, use **Exportar backup** em um e **Restaurar backup** no outro. O backup carrega **cinco coleções**: clientes, operações, títulos, feriados e configurações.
+
+> O schema do banco está na **versão 2** (a v2 acrescentou a tabela de feriados). O Dexie migra bases existentes sozinho, sem perder dados — quem já usava o app não precisa fazer nada.
 
 ### Persistência dos dados
 
@@ -173,7 +175,8 @@ A partir daí funciona em modo avião, em tela cheia, sem barra do navegador.
 src/
   domain/               ← motor financeiro puro (sem UI, sem banco)
     money.ts            ← valores em centavos (inteiros)
-    dayCount.ts         ← dias corridos e úteis; datas seguras contra entrada incompleta
+    dayCount.ts         ← dias corridos e úteis (pula fins de semana e feriados)
+    holidays.ts         ← Páscoa (Meeus) + feriados nacionais de qualquer ano
     calculations/
       discount.ts       ← desconto simples por taxa mensal
       averageTerm.ts    ← prazo médio ponderado
@@ -182,13 +185,13 @@ src/
       iof.ts            ← IOF/Crédito (diário por título + adicional)
       methods.ts        ← registro de métodos de cálculo (extensível)
       operation.ts      ← calculateOperation() — única porta de entrada da UI
-      __tests__/        ← 57 testes unitários
-  db/                   ← Dexie/IndexedDB (schema + dados de demonstração)
+      __tests__/        ← 73 testes unitários
+  db/                   ← Dexie/IndexedDB (schema v2 + dados de demonstração)
   services/             ← operações, clientes, configurações, PDF, CSV, backup
   components/           ← UI reutilizável (CurrencyInput, PercentInput, ReceivableTable,
                           OperationSummary, ConfirmDialog, Toast, EmptyState…)
   pages/                ← Dashboard, Nova operação, Histórico, Detalhe, Clientes,
-                          Configurações, Backup
+                          Configurações, Feriados, Backup
   hooks/ · utils/ · types/ · constants/
 scripts/
   generate-icons.mjs    ← gera os ícones PNG da PWA (sem dependências)
@@ -209,8 +212,10 @@ scripts/
 - **Exclusão de cliente preserva operações** (apenas desvincula).
 - **PIN local opcional** (4–6 dígitos, hash SHA-256) em Configurações — proteção de conveniência, sem login online.
 - **Compensação D+x** — dias somados ao vencimento de cada título até o dinheiro ficar disponível (cheque que compensa em D+2, por exemplo). Alonga o prazo, aumenta o deságio e reduz o líquido. Vale para a operação inteira, com padrão configurável (vem **D+2 em dias úteis**) e ajuste caso a caso em Nova operação. O prazo médio, o IOF e a **taxa efetiva** passam a usar a data de compensação, não a de vencimento — é quando o dinheiro de fato entra.
-- **Dias úteis na compensação** — em `business`, D+x pula sábados e domingos (sexta + D+2 = terça, não domingo); se o próprio vencimento cair no fim de semana, a contagem parte do próximo dia útil. O critério fica gravado **em cada operação** (`compensationMode`), então mudar o padrão em Configurações não altera o valor de operações já fechadas. Operações salvas antes deste campo mantêm `calendar`/D+0, sem alteração alguma.
-- **Feriados ainda não entram na conta.** Só fins de semana. Um D+2 que caia no Carnaval, na Sexta-Feira Santa ou no Corpus Christi vai errar — ver "Preparado para a V2".
+- **Dias úteis na compensação** — em `business`, D+x pula sábados, domingos **e feriados cadastrados** (sexta + D+2 = terça, não domingo); se o próprio vencimento cair em dia não útil, a contagem parte do próximo dia útil. O critério fica gravado **em cada operação** (`compensationMode`), então mudar o padrão em Configurações não altera o valor de operações já fechadas. Operações salvas antes deste campo mantêm `calendar`/D+0, sem alteração alguma.
+- **Feriados em duas camadas** — os **nacionais** são gerados pelo app (fixos + móveis derivados da Páscoa pelo algoritmo de Meeus, offline e para qualquer ano), evitando digitar ~13 datas por ano e, sobretudo, o erro silencioso de esquecer uma. Os **estaduais e municipais** são cadastrados à mão, porque variam por praça. Cada feriado é uma **data única** (sem recorrência): para o ano seguinte, gera-se os nacionais de novo e cadastram-se os locais.
+- **Quarta-feira de Cinzas é dia útil** (banco abre à tarde) — por isso não entra na lista gerada.
+- **Alterar a lista de feriados não muda operações já salvas.** As datas de compensação ficam gravadas em cada título; consultar não recalcula. O recálculo só acontece ao editar a operação — que é o comportamento correto, já que a lista vigente passa a valer.
 - **IOF automático** — calculado pelo motor, não digitado à mão. Estrutura do Decreto 6.306/2007: alíquota **diária** aplicada ao prazo de cada título (limitada a 365 dias) mais a alíquota **adicional** fixa, ambas incidindo sobre o **valor líquido entregue ao cedente**. A base é apurada *antes* do próprio IOF, para não criar circularidade. O principal é apurado **por título** (cada um tem prazo próprio), rateando a base pelo líquido que cada título gera.
 - **Alíquotas de IOF são configuráveis, nunca constantes no código** — mudam por decreto. Ficam em Configurações, pré-preenchidas com 0,0082% a.d. + 0,95% adicional; **confira as vigentes antes de usar**. As alíquotas usadas ficam gravadas em cada operação, então recalcular uma operação antiga não altera o que foi fechado.
 - **"Empresa é factoring"** (Configurações) faz novas operações já virem com o IOF marcado; o usuário pode desmarcar caso a caso.
@@ -220,7 +225,7 @@ scripts/
 ## Preparado para a V2
 
 - Novos métodos de cálculo (registro em `methods.ts` + união em `CalculationMethod`).
-- **Calendário de feriados local e editável** — a compensação já pula fins de semana (`addBusinessDaysISO`), mas não feriados. Como o app precisa funcionar offline, não dá para consultar API: seria uma tela nova com os feriados nacionais pré-carregados, editável e incluída no backup. O ponto de mudança é único: `addCompensationDays` em `dayCount.ts`.
+- Feriados por praça (hoje é uma lista única da empresa) — só vale a pena se ele passar a operar em cidades com calendários diferentes.
 - Logo e dados completos da empresa no PDF (Configurações já persistem nome/CNPJ).
 - Taxa por título editável (campo `rate` já existe no schema).
 - Despesas por título na grade (campo `expensesCents` já existe e é calculado).

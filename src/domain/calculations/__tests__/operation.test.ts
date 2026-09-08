@@ -446,4 +446,66 @@ describe('calculateOperation', () => {
     expect(executar).not.toThrow();
     expect(executar().receivables[0].days).toBe(0);
   });
+
+  // ---- Feriados na compensação ----
+
+  it('feriado no meio da compensação empurra a data e reduz o líquido', () => {
+    // 12/10/2026 (N. Sra. Aparecida) é segunda. Vencimento sexta 09/10, D+1 útil.
+    const titulo = [
+      { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-10-09' },
+    ];
+    const base = { operationDate: '2026-09-08', compensationDays: 1, compensationMode: 'business' as const };
+
+    const semFeriado = calculateOperation(baseInput({ ...base, receivables: titulo }));
+    const comFeriado = calculateOperation(
+      baseInput({ ...base, receivables: titulo, holidays: ['2026-10-12'] }),
+    );
+
+    expect(semFeriado.receivables[0].compensationDate).toBe('2026-10-12');
+    expect(comFeriado.receivables[0].compensationDate).toBe('2026-10-13');
+    expect(comFeriado.receivables[0].days).toBe(semFeriado.receivables[0].days + 1);
+    expect(comFeriado.netAmountCents).toBeLessThan(semFeriado.netAmountCents);
+  });
+
+  it('Carnaval: dois feriados seguidos, com Cinzas contando como dia útil', () => {
+    const result = calculateOperation(
+      baseInput({
+        operationDate: '2026-02-02',
+        compensationDays: 1,
+        compensationMode: 'business',
+        holidays: ['2026-02-16', '2026-02-17'],
+        receivables: [
+          // sexta 13/02
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-02-13' },
+        ],
+      }),
+    );
+    // pula sábado, domingo, segunda e terça de Carnaval → Quarta de Cinzas
+    expect(result.receivables[0].compensationDate).toBe('2026-02-18');
+  });
+
+  it('feriados são ignorados quando a compensação é em dias corridos', () => {
+    const result = calculateOperation(
+      baseInput({
+        operationDate: '2026-09-08',
+        compensationDays: 1,
+        compensationMode: 'calendar',
+        holidays: ['2026-10-12'],
+        receivables: [
+          { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-10-09' },
+        ],
+      }),
+    );
+    expect(result.receivables[0].compensationDate).toBe('2026-10-10');
+  });
+
+  it('lista de feriados vazia mantém o resultado anterior', () => {
+    const titulo = [
+      { id: '1', documentNumber: '001', nominalAmountCents: 1_000_000, dueDate: '2026-09-11' },
+    ];
+    const base = { operationDate: '2026-09-08', compensationDays: 2, compensationMode: 'business' as const };
+    expect(calculateOperation(baseInput({ ...base, receivables: titulo, holidays: [] })).netAmountCents).toBe(
+      calculateOperation(baseInput({ ...base, receivables: titulo })).netAmountCents,
+    );
+  });
 });

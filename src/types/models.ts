@@ -75,6 +75,18 @@ export interface Receivable {
   notes?: string;
 }
 
+/**
+ * Feriado — data única (sem recorrência, por decisão de produto).
+ * A data é a chave primária: um feriado por dia, sem duplicatas.
+ */
+export interface Holiday {
+  date: string; // yyyy-MM-dd
+  name: string;
+  /** 'nacional' = gerado pelo app · 'manual' = cadastrado pelo usuário */
+  source: 'nacional' | 'manual';
+  createdAt: string;
+}
+
 export interface Settings {
   id: 'app';
   companyName: string;

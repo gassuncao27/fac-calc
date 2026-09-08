@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { db } from '../db/database';
 import { DEFAULT_SETTINGS } from '../constants';
-import type { Client, Operation, Receivable, Settings } from '../types/models';
+import type { Client, Holiday, Operation, Receivable, Settings } from '../types/models';
 import { downloadText } from '../utils/download';
 
 const BACKUP_VERSION = 1;
@@ -14,6 +14,8 @@ export interface BackupFile {
   operations: Operation[];
   receivables: Receivable[];
   settings: Settings | null;
+  /** Opcional: backups anteriores à tela de Feriados não trazem esta lista */
+  holidays?: Holiday[];
 }
 
 const clientSchema = z.object({
@@ -102,6 +104,13 @@ const settingsSchema = z
   })
   .nullable();
 
+const holidaySchema = z.object({
+  date: z.string(),
+  name: z.string(),
+  source: z.enum(['nacional', 'manual']).optional().default('manual'),
+  createdAt: z.string().optional().default(''),
+});
+
 const backupSchema = z.object({
   app: z.literal('FactorCalc'),
   version: z.number(),
@@ -110,14 +119,16 @@ const backupSchema = z.object({
   operations: z.array(operationSchema),
   receivables: z.array(receivableSchema),
   settings: settingsSchema,
+  holidays: z.array(holidaySchema).optional().default([]),
 });
 
 export async function exportBackup(): Promise<void> {
-  const [clients, operations, receivables, settings] = await Promise.all([
+  const [clients, operations, receivables, settings, holidays] = await Promise.all([
     db.clients.toArray(),
     db.operations.toArray(),
     db.receivables.toArray(),
     db.settings.get('app'),
+    db.holidays.orderBy('date').toArray(),
   ]);
   const backup: BackupFile = {
     app: 'FactorCalc',
@@ -127,6 +138,7 @@ export async function exportBackup(): Promise<void> {
     operations,
     receivables,
     settings: settings ? { ...DEFAULT_SETTINGS, ...settings } : null,
+    holidays,
   };
   const today = new Date().toISOString().slice(0, 10);
   downloadText(JSON.stringify(backup, null, 2), `factorcalc-backup-${today}.json`, 'application/json');
@@ -136,6 +148,7 @@ export interface BackupPreview {
   clients: number;
   operations: number;
   receivables: number;
+  holidays: number;
   exportedAt: string;
   data: BackupFile;
 }
@@ -157,6 +170,7 @@ export function parseBackup(jsonText: string): BackupPreview {
     clients: data.clients.length,
     operations: data.operations.length,
     receivables: data.receivables.length,
+    holidays: data.holidays?.length ?? 0,
     exportedAt: data.exportedAt,
     data,
   };
@@ -164,16 +178,18 @@ export function parseBackup(jsonText: string): BackupPreview {
 
 /** Substitui todos os dados locais pelos do backup (após confirmação do usuário). */
 export async function restoreBackup(backup: BackupFile): Promise<void> {
-  await db.transaction('rw', db.clients, db.operations, db.receivables, db.settings, async () => {
+  await db.transaction('rw', db.clients, db.operations, db.receivables, db.settings, db.holidays, async () => {
     await Promise.all([
       db.clients.clear(),
       db.operations.clear(),
       db.receivables.clear(),
       db.settings.clear(),
+      db.holidays.clear(),
     ]);
     await db.clients.bulkAdd(backup.clients);
     await db.operations.bulkAdd(backup.operations);
     await db.receivables.bulkAdd(backup.receivables);
+    if (backup.holidays?.length) await db.holidays.bulkPut(backup.holidays);
     if (backup.settings) {
       await db.settings.put({ ...DEFAULT_SETTINGS, ...backup.settings });
     }

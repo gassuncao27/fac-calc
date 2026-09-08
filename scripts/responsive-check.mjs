@@ -29,6 +29,7 @@ const PAGINAS = [
   ['nova operação', '#/operacoes/nova'],
   ['clientes', '#/clientes'],
   ['configurações', '#/configuracoes'],
+  ['feriados', '#/feriados'],
   ['backup', '#/backup'],
 ];
 

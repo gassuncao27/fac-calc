@@ -26,9 +26,10 @@ export function BackupPage() {
       clients: await db.clients.count(),
       operations: await db.operations.count(),
       receivables: await db.receivables.count(),
+      holidays: await db.holidays.count(),
     }),
     [],
-    { clients: 0, operations: 0, receivables: 0 },
+    { clients: 0, operations: 0, receivables: 0, holidays: 0 },
   );
 
   async function handleExport() {
@@ -123,7 +124,7 @@ export function BackupPage() {
           <h2 className="text-base font-semibold text-slate-900">Exportar backup</h2>
           <p className="mt-1 text-sm text-slate-500">
             Gera um arquivo JSON com {counts.clients} cliente(s), {counts.operations} operação(ões),{' '}
-            {counts.receivables} título(s) e as configurações.
+            {counts.receivables} título(s), {counts.holidays} feriado(s) e as configurações.
           </p>
           <Button onClick={handleExport} className="mt-4">
             <Download className="size-4" />
@@ -169,8 +170,9 @@ export function BackupPage() {
           preview ? (
             <>
               O arquivo contém <strong>{preview.clients}</strong> cliente(s),{' '}
-              <strong>{preview.operations}</strong> operação(ões) e <strong>{preview.receivables}</strong>{' '}
-              título(s), exportado em {formatDateTime(preview.exportedAt)}.
+              <strong>{preview.operations}</strong> operação(ões), <strong>{preview.receivables}</strong>{' '}
+              título(s) e <strong>{preview.holidays}</strong> feriado(s), exportado em{' '}
+              {formatDateTime(preview.exportedAt)}.
               <br />
               <br />
               <strong>Todos os dados atuais deste aparelho serão substituídos.</strong> Deseja continuar?

@@ -120,7 +120,64 @@ await page.click('button[aria-label="Excluir título 3"]');
 await page.waitForSelector('text=R$ 24.100,00');
 check('Resumo volta ao normal após remover a linha', true);
 
-// 4. Salvar
+// 3d. Feriados: cadastrar, gerar nacionais e ver o efeito no cálculo
+await page.click('nav a[href$="/feriados"] >> nth=0');
+await page.waitForSelector('h1:has-text("Feriados")');
+await page.click('button:has-text("Gerar nacionais")');
+await page.waitForSelector('text=/feriado\\(s\\) nacional/');
+const listaFeriados = await page.textContent('main');
+check('Feriados nacionais gerados', /Natal/.test(listaFeriados ?? '') && /Carnaval/.test(listaFeriados ?? ''));
+check(
+  'Quarta-feira de Cinzas NÃO entra (é dia útil)',
+  !/cinzas/i.test(listaFeriados ?? ''),
+);
+// cadastro manual
+await page.fill('input[aria-label="Data do feriado"]', '2026-07-09');
+await page.fill('input[aria-label="Nome do feriado"]', 'Revolução Constitucionalista');
+await page.click('button:has-text("Adicionar")');
+await page.waitForSelector('text=Feriado cadastrado.');
+check('Feriado manual cadastrado', await page.isVisible('text=Revolução Constitucionalista'));
+// duplicata é recusada
+await page.fill('input[aria-label="Data do feriado"]', '2026-07-09');
+await page.fill('input[aria-label="Nome do feriado"]', 'Duplicado');
+await page.click('button:has-text("Adicionar")');
+await page.waitForSelector('text=/Já existe um feriado/');
+check('Feriado duplicado é recusado', true);
+await page.screenshot({ path: `${shotsDir}/07-feriados.png` });
+
+// volta à operação e confere que o feriado entra no cálculo
+await page.click('nav a[href$="/operacoes/nova"] >> nth=0');
+await page.waitForSelector('text=Nova operação');
+await page.fill('input[type="date"] >> nth=0', '2026-08-14');
+await page.fill('input[aria-label="Compensação em dias após o vencimento"]', '1');
+await page.click('button:has-text("Adicionar título")');
+await page.fill('[data-row="0"][data-col="value"]', '10000');
+// vencimento sexta 09/10; segunda 12/10 é feriado nacional → compensa terça 13/10
+await page.fill('[data-row="0"][data-col="due"]', '2026-10-09');
+await page.waitForTimeout(400);
+// A data de compensação aparece como texto (cartões) ou como tooltip (tabela),
+// conforme a largura — checa os dois.
+const areaTitulos = await page.textContent('main');
+const tooltipTitulos = await page.evaluate(() =>
+  [...document.querySelectorAll('[title]')].map((el) => el.getAttribute('title')).join(' | '),
+);
+check(
+  'Feriado empurra a compensação no cálculo (12/10 é feriado → 13/10)',
+  /13\/10\/2026/.test(`${areaTitulos} ${tooltipTitulos}`),
+  /13\/10\/2026/.test(`${areaTitulos} ${tooltipTitulos}`) ? '' : 'não encontrou 13/10/2026',
+);
+
+// 4. Salvar (reconstrói o cenário de referência)
+await page.selectOption('select[aria-label="Cliente"]', { label: 'Empresa Teste Ltda' });
+await page.click('button[aria-label="Excluir título 1"]');
+await page.fill('input[aria-label="Compensação em dias após o vencimento"]', '0');
+await page.click('button:has-text("Adicionar título")');
+await page.fill('[data-row="0"][data-col="value"]', '10000');
+await page.fill('[data-row="0"][data-col="due"]', '2026-09-28');
+await page.click('button:has-text("Adicionar título")');
+await page.fill('[data-row="1"][data-col="value"]', '15000');
+await page.fill('[data-row="1"][data-col="due"]', '2026-09-13');
+await page.waitForSelector('text=R$ 24.100,00');
 await page.click('button:has-text("Salvar operação")');
 await page.waitForSelector('text=/Operação OP-\\d{4}-\\d{6} salva/');
 await page.waitForSelector('text=Valor líquido');
@@ -226,7 +283,11 @@ await reopened.screenshot({ path: `${shotsDir}/10-reaberto-offline.png` });
 await context.setOffline(false);
 
 const realErrors = errors.filter(
-  (e) => !/Failed to load resource|net::ERR_INTERNET_DISCONNECTED|ERR_FAILED/.test(e),
+  (e) =>
+    !/Failed to load resource|net::ERR_INTERNET_DISCONNECTED|ERR_FAILED/.test(e) &&
+    // Provocado de propósito no teste de feriado duplicado: o app trata,
+    // mostra o toast e registra no console para diagnóstico.
+    !/Já existe um feriado nessa data/.test(e),
 );
 check('Sem erros de JavaScript no console', realErrors.length === 0, realErrors.join(' | '));
 

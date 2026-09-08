@@ -63,6 +63,8 @@ function emptyForm(settings: Settings): FormState {
 export function OperationFormPage() {
   const { id } = useParams<{ id: string }>();
   const settings = useLiveQuery(() => getSettings(), []);
+  // Feriados entram no cálculo quando a compensação é em dias úteis
+  const holidays = useLiveQuery(async () => (await db.holidays.orderBy('date').keys()) as string[], [], []);
   const [form, setForm] = useState<FormState | null>(null);
   const [existingId, setExistingId] = useState<string | undefined>(undefined);
   const [saving, setSaving] = useState(false);
@@ -124,12 +126,13 @@ export function OperationFormPage() {
       otherExpensesCents: form.otherExpensesCents ?? 0,
       compensationDays: form.compensationDays,
       compensationMode: form.compensationMode,
+      holidays,
       iofEnabled: form.iofEnabled,
       iofDailyRate: settings?.iofDailyRate ?? 0,
       iofAdditionalRate: settings?.iofAdditionalRate ?? 0,
       receivables: form.receivables,
     });
-  }, [form, settings]);
+  }, [form, settings, holidays]);
 
   function toDraft(f: FormState): OperationDraft {
     return {
@@ -145,6 +148,7 @@ export function OperationFormPage() {
       otherExpensesCents: f.otherExpensesCents ?? 0,
       compensationDays: f.compensationDays,
       compensationMode: f.compensationMode,
+      holidays,
       iofEnabled: f.iofEnabled,
       iofDailyRate: settings?.iofDailyRate ?? 0,
       iofAdditionalRate: settings?.iofAdditionalRate ?? 0,
@@ -327,7 +331,7 @@ export function OperationFormPage() {
                 label="Compensação D + x"
                 hint={
                   form.compensationMode === 'business'
-                    ? 'Dias úteis após o vencimento (pula fins de semana).'
+                    ? 'Dias úteis após o vencimento (pula fins de semana e feriados).'
                     : 'Dias corridos após o vencimento.'
                 }
               >

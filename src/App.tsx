@@ -9,6 +9,7 @@ import { OperationsListPage } from './pages/OperationsList';
 import { OperationDetailPage } from './pages/OperationDetail';
 import { ClientsPage } from './pages/Clients';
 import { SettingsPage } from './pages/Settings';
+import { HolidaysPage } from './pages/Holidays';
 import { BackupPage } from './pages/Backup';
 
 export function App() {
@@ -26,6 +27,7 @@ export function App() {
               <Route path="/operacoes/:id/editar" element={<OperationFormPage />} />
               <Route path="/clientes" element={<ClientsPage />} />
               <Route path="/configuracoes" element={<SettingsPage />} />
+              <Route path="/feriados" element={<HolidaysPage />} />
               <Route path="/backup" element={<BackupPage />} />
               <Route path="*" element={<DashboardPage />} />
             </Route>

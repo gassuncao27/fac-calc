@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Home, Plus, History, Users, Settings as SettingsIcon, DatabaseBackup, WifiOff } from 'lucide-react';
+import { Home, Plus, History, Users, Settings as SettingsIcon, CalendarDays, DatabaseBackup, WifiOff } from 'lucide-react';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { APP_NAME } from '../constants';
 
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: '/operacoes', label: 'Operações', icon: History, end: true },
   { to: '/clientes', label: 'Clientes', icon: Users, end: false },
   { to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, end: false },
+  { to: '/feriados', label: 'Feriados', icon: CalendarDays, end: false },
   { to: '/backup', label: 'Backup', icon: DatabaseBackup, end: false },
 ];
 

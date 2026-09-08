@@ -1,5 +1,5 @@
 import type { CalculationMethod, DayCountMode } from '../../types/models';
-import { addCompensationDays, countDays } from '../dayCount';
+import { addCompensationDays, countDays, type HolidaySet } from '../dayCount';
 import { roundCents } from '../money';
 import { averageTermDays } from './averageTerm';
 import { buildOperationCashflows } from './cashflows';
@@ -34,6 +34,8 @@ export interface OperationCalcInput {
    * 'calendar' = dias corridos · 'business' = dias úteis (pula fins de semana)
    */
   compensationMode?: DayCountMode;
+  /** Feriados (yyyy-MM-dd) considerados quando o critério é dias úteis */
+  holidays?: HolidaySet;
   /** IOF incide nesta operação? (padrão: não) */
   iofEnabled?: boolean;
   /** Alíquota diária do IOF em % (0.0082 = 0,0082% a.d.) */
@@ -92,6 +94,7 @@ export function calculateOperation(input: OperationCalcInput): OperationCalcResu
       r.dueDate,
       compensationDays,
       input.compensationMode ?? 'calendar',
+      input.holidays,
     );
     const dueDays = Math.max(0, countDays(input.operationDate, r.dueDate));
     // O prazo que remunera a operação vai até a compensação, não até o vencimento.
